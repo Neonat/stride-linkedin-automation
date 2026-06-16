@@ -1,0 +1,85 @@
+/* Stride Design System — CSS Custom Properties */
+
+:root {
+  /* ── Colour: Primary ── */
+  --color-stride-blue:  #2E7FB8;
+  --color-deep-blue:    #1A5F8A;
+  --color-sky-blue:     #5BA3D0;
+  --color-pale-blue:    #D6EAF5;
+
+  /* ── Colour: Neutral ── */
+  --color-charcoal:     #3D3D3D;
+  --color-slate:        #5A5A5A;
+  --color-ash:          #8C8C8C;
+  --color-mist:         #C4C4C4;
+  --color-ghost:        #EFEFEF;
+  --color-white:        #FFFFFF;
+
+  /* ── Colour: Semantic ── */
+  --color-amber:        #F5A623;
+  --color-amber-light:  #FEF3DC;
+  --color-amber-dark:   #A06B10;
+  --color-green:        #27AE60;
+  --color-green-light:  #D5F2E3;
+  --color-red:          #E74C3C;
+  --color-red-light:    #FDECEA;
+
+  /* ── Colour: Roles ── */
+  --bg-page:            #F7F9FB;
+  --bg-surface:         #FFFFFF;
+  --bg-surface-raised:  #FFFFFF;
+  --border-default:     #E2E8EE;
+  --border-active:      #2E7FB8;
+  --text-primary:       #3D3D3D;
+  --text-secondary:     #5A5A5A;
+  --text-muted:         #8C8C8C;
+  --text-on-blue:       #FFFFFF;
+  --action-primary:     #2E7FB8;
+  --action-primary-hover: #1A5F8A;
+
+  /* ── Colour: Pillars ── */
+  --pillar-technical-bg:   #D6EAF5;
+  --pillar-technical-text: #1A5F8A;
+  --pillar-leadership-bg:  #E8D5F5;
+  --pillar-leadership-text:#6B3FA0;
+  --pillar-community-bg:   #D5F2E3;
+  --pillar-community-text: #1A7A45;
+  --pillar-creative-bg:    #FEF3DC;
+  --pillar-creative-text:  #A06B10;
+  --pillar-research-bg:    #DCF0FE;
+  --pillar-research-text:  #0A5A8A;
+
+  /* ── Spacing ── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Border Radius ── */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 999px;
+
+  /* ── Shadows ── */
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:     0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg:     0 8px 24px rgba(0,0,0,0.12);
+  --shadow-blue:   0 4px 14px rgba(46,127,184,0.30);
+  --shadow-streak: 0 4px 14px rgba(245,166,35,0.30);
+
+  /* ── Motion ── */
+  --motion-fast:   120ms ease-out;
+  --motion-base:   200ms ease-in-out;
+  --motion-slow:   350ms ease-in-out;
+  --motion-draft:  400ms ease-out;
+
+  /* ── Typography (used via utility classes) ── */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
