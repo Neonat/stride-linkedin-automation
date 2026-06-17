@@ -157,7 +157,7 @@ body {
 }
 
 .navbar-logo-text {
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.5px;
@@ -169,10 +169,10 @@ body {
   justify-content: center;
   background: linear-gradient(135deg, var(--color-stride-blue), var(--color-deep-blue));
   color: var(--color-white);
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 800;
   border-radius: 12px;
-  padding: 0 4px;
+  padding: 0 5px;
   letter-spacing: -0.5px;
 }
 
@@ -332,7 +332,7 @@ body {
   align-items: center;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   border: 1.5px solid transparent;
   cursor: pointer;
@@ -396,7 +396,7 @@ body {
   backdrop-filter: blur(var(--glass-blur-sm));
 }
 .profile-payoff-title {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.6px;
   text-transform: uppercase; color: var(--color-stride-blue);
   margin-bottom: var(--space-4);
 }
@@ -414,7 +414,7 @@ body {
   padding-top: var(--space-3); border-top: 1px solid var(--border-default);
 }
 .profile-tone-label {
-  font-size: 11px; padding: 2px var(--space-2);
+  font-size: 12px; padding: 2px var(--space-2);
   border-radius: var(--radius-sm); background: var(--color-ghost);
   color: var(--text-muted); font-weight: 500;
 }
@@ -448,7 +448,7 @@ body {
   gap: 3px;
   padding: 2px var(--space-2);
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
 }
@@ -485,9 +485,9 @@ body {
    SECTION LABEL
 ───────────────────────────────────────── */
 .section-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--text-muted);
   margin-bottom: var(--space-2);

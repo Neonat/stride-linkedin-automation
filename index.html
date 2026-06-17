@@ -32,6 +32,37 @@
 </button>
 
 <!-- ═══════════════════════════════════════════════════
+     SCREEN — LOGIN
+════════════════════════════════════════════════════ -->
+<section id="screen-login" class="screen">
+  <div class="login-wrap">
+    <div class="login-card">
+
+      <div class="login-header">
+        <div class="navbar-logo" style="justify-content:center; margin-bottom:var(--space-4);">
+          <span class="navbar-logo-text">Stri</span><span class="navbar-logo-box">de</span>
+        </div>
+        <h2>Welcome back</h2>
+        <p class="login-sub">Sign in to keep your streak going.</p>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:var(--space-3); margin-bottom:var(--space-4);">
+        <input type="text" id="login-email" class="input-glass" placeholder="Username" autocomplete="username" />
+        <input type="password" id="login-password" class="input-glass" placeholder="Password" autocomplete="current-password" />
+      </div>
+
+      <p id="login-error" class="text-caption" style="display:none; color:var(--color-red); margin-bottom:var(--space-3);">Invalid credentials. Try demo / password.</p>
+
+      <button id="btn-login-submit" class="btn btn-primary" onclick="handleLogin()">Sign In</button>
+
+      <p class="text-caption text-muted" style="text-align:center; margin-top:var(--space-4);">Demo credentials: <strong>demo</strong> / <strong>password</strong></p>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
      SCREEN 0 — LANDING PAGE
 ════════════════════════════════════════════════════ -->
 <section id="screen-landing" class="screen">
@@ -679,7 +710,7 @@ Stride helps you share it.</h1>
     <span class="navbar-center">NTU Computing — Admin</span>
     <div style="display: flex; gap: var(--space-3); align-items: center;">
       <div class="avatar">JL</div>
-      <button class="btn btn-ghost" onclick="handleLogout()" style="min-height: 32px; padding: 0 var(--space-3); color: var(--color-coral); border: 1px solid var(--color-coral);">Log Out</button>
+      <button class="btn btn-ghost" onclick="handleLogout()" style="min-height: 32px; padding: 0 var(--space-3); color: var(--color-red); border: 1px solid var(--color-red);">Log Out</button>
     </div>
   </nav>
 
@@ -871,6 +902,7 @@ Stride helps you share it.</h1>
 <div id="dev-menu">
   <button id="dev-menu-toggle" title="Dev: Jump to screen">⚡</button>
   <div id="dev-menu-panel">
+    <button class="dev-menu-item" data-screen="login"><span class="num">L</span> Login</button>
     <button class="dev-menu-item" data-screen="landing"><span class="num">0</span> Landing</button>
     <button class="dev-menu-item" data-screen="onboarding"><span class="num">1</span> Onboarding</button>
     <button class="dev-menu-item" data-screen="home"><span class="num">2</span> Home</button>

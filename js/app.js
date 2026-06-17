@@ -184,15 +184,6 @@ function initOnboarding() {
   });
 }
 
-/* kept for slider on any remaining step */
-function initPillarChips() {
-  document.querySelectorAll(".onboarding-chips .chip").forEach(chip => {
-    chip.addEventListener("click", () => {
-      chip.classList.toggle("selected");
-    });
-  });
-}
-
 /* Personality slider gradient update */
 function initSlider() {
   const slider = document.getElementById("personality-slider");
@@ -454,7 +445,6 @@ document.addEventListener("click", () => {
 document.addEventListener("DOMContentLoaded", () => {
   goToStep(1);
   initOnboarding();
-  initPillarChips();
   initSlider();
   initDraftEditor();
   initDevMenu();
