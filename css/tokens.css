@@ -101,37 +101,38 @@
   --fs-draft:   clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
 
   /* ── Responsive container width (single-column, scales up) ── */
-  --container-w: 440px;
+  --container-w: 92vw;
 
   /* ── Wide dashboard width (Home/Draft/Published/Collab/Admin desktop grids) ── */
-  --dashboard-w: 440px;
+  --dashboard-w: 92vw;
 
   /* ── Glassmorphism ── */
-  --glass-surface:    rgba(255,255,255,0.58);
-  --glass-surface-strong: rgba(255,255,255,0.78);
-  --glass-border:     rgba(255,255,255,0.65);
-  --glass-highlight:  rgba(255,255,255,0.85);
-  --glass-blur:       20px;
-  --glass-blur-sm:    12px;
-  --glass-shadow:     0 8px 32px rgba(31,45,61,0.10);
+  --glass-surface:    rgba(255,255,255,0.45);
+  --glass-surface-strong: rgba(255,255,255,0.65);
+  --glass-border:     rgba(255,255,255,0.6);
+  --glass-highlight:  rgba(255,255,255,0.9);
+  --glass-blur:       32px;
+  --glass-blur-sm:    16px;
+  --glass-shadow:     0 12px 40px rgba(31,45,61,0.08);
 
   /* ── Ambient gradient blobs ── */
   --blob-1: #2E7FB8;
   --blob-2: #5BA3D0;
   --blob-3: #8E44AD;
   --blob-4: #F5A623;
-  --blob-opacity: 0.45;
+  --blob-opacity: 0.55;
 }
 
 /* ── Breakpoints: container grows, stays single column ── */
 @media (min-width: 600px)  { :root { --container-w: 520px; } }
-@media (min-width: 900px)  { :root { --container-w: 580px; } }
-@media (min-width: 1200px) { :root { --container-w: 640px; } }
+@media (min-width: 900px)  { :root { --container-w: 700px; } }
+@media (min-width: 1200px) { :root { --container-w: 800px; } }
 
 /* ── Breakpoints: dashboard width (Home/Draft/Published/Collab/Admin) ── */
-@media (min-width: 600px)  { :root { --dashboard-w: 520px; } }
-@media (min-width: 900px)  { :root { --dashboard-w: 900px; } }
-@media (min-width: 1200px) { :root { --dashboard-w: 1100px; } }
+@media (min-width: 600px)  { :root { --dashboard-w: 560px; } }
+@media (min-width: 900px)  { :root { --dashboard-w: 92vw; } }
+@media (min-width: 1200px) { :root { --dashboard-w: 1300px; } }
+@media (min-width: 1600px) { :root { --dashboard-w: 1600px; } }
 
 /* ─────────────────────────────────────────
    DARK MODE — same role tokens, dark values
@@ -152,11 +153,11 @@
   --shadow-md:  0 4px 14px rgba(0,0,0,0.40);
   --shadow-lg:  0 10px 28px rgba(0,0,0,0.45);
 
-  --glass-surface:    rgba(30,37,46,0.64);
-  --glass-surface-strong: rgba(30,37,46,0.82);
-  --glass-border:     rgba(255,255,255,0.12);
-  --glass-highlight:  rgba(255,255,255,0.07);
-  --glass-shadow:     0 8px 32px rgba(0,0,0,0.45);
+  --glass-surface:    rgba(20,25,32,0.45);
+  --glass-surface-strong: rgba(20,25,32,0.75);
+  --glass-border:     rgba(255,255,255,0.15);
+  --glass-highlight:  rgba(255,255,255,0.08);
+  --glass-shadow:     0 12px 40px rgba(0,0,0,0.5);
 
   --blob-opacity: 0.30;
 }
