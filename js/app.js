@@ -180,6 +180,21 @@ function runPublishedAnimation() {
 }
 
 /* ─────────────────────────────────────────
+   THEME TOGGLE (dark mode)
+───────────────────────────────────────── */
+function initThemeToggle() {
+  const toggle = document.getElementById("theme-toggle");
+  if (!toggle) return;
+  const root = document.documentElement;
+
+  toggle.addEventListener("click", () => {
+    const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    localStorage.setItem("stride-theme", next);
+  });
+}
+
+/* ─────────────────────────────────────────
    DEV MENU
 ───────────────────────────────────────── */
 function initDevMenu() {
@@ -240,6 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initSlider();
   initDraftEditor();
   initDevMenu();
+  initThemeToggle();
   wireButtons();
   showScreen("onboarding");
 });

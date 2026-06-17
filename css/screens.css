@@ -9,23 +9,37 @@
 }
 .screen.active { display: block; }
 
-/* Mobile column wrapper (all app screens) */
+/* Fluid single-column wrapper (all app screens) — grows with viewport,
+   stays one column per the chosen "scaled" responsive strategy. */
 .mobile-wrap {
-  max-width: 420px;
+  max-width: var(--container-w);
   margin: 0 auto;
   padding: var(--space-4);
   padding-bottom: var(--space-12);
+}
+
+@media (min-width: 600px) {
+  .mobile-wrap { padding: var(--space-6); padding-bottom: var(--space-12); }
+}
+@media (min-width: 900px) {
+  .mobile-wrap { padding: var(--space-8); padding-bottom: var(--space-12); }
+}
+
+/* Wide dashboard variant — used on Home/Draft/Published/Collab only.
+   Onboarding/Nudge intentionally keep plain .mobile-wrap (narrow, centered). */
+.wrap-dashboard {
+  max-width: var(--dashboard-w);
 }
 
 /* ─────────────────────────────────────────
    SCREEN 1 — ONBOARDING
 ───────────────────────────────────────── */
 #screen-onboarding {
-  background: var(--bg-page);
+  background: transparent;
 }
 
 .onboarding-inner {
-  max-width: 420px;
+  max-width: var(--container-w);
   margin: 0 auto;
   padding: var(--space-12) var(--space-6) var(--space-8);
   display: flex;
@@ -44,8 +58,19 @@
   flex-direction: column;
   gap: var(--space-6);
   animation: stepFadeIn var(--motion-draft) ease-out;
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
+  padding: var(--space-6);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 .onboarding-step.active { display: flex; }
+
+@media (min-width: 600px) {
+  .onboarding-step { padding: var(--space-8); }
+}
 
 @keyframes stepFadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -53,7 +78,7 @@
 }
 
 .onboarding-question {
-  font-size: 20px;
+  font-size: var(--fs-h2);
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.35;
@@ -97,7 +122,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--color-stride-blue);
+  background: linear-gradient(135deg, var(--color-stride-blue), var(--color-deep-blue));
   box-shadow: var(--shadow-md);
   cursor: pointer;
 }
@@ -118,10 +143,32 @@
    SCREEN 2 — HOME
 ───────────────────────────────────────── */
 #screen-home {
-  background: var(--bg-page);
+  background: transparent;
 }
 
 .home-section { margin-bottom: var(--space-6); }
+
+/* Wide dashboard 2-col grid: main = pillar coverage, side = moment + ghost CTAs */
+.home-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+@media (min-width: 900px) {
+  .home-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: var(--space-6);
+    align-items: start;
+  }
+}
+
+.home-grid-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
 
 .pillar-row {
   display: flex;
@@ -129,12 +176,22 @@
   gap: var(--space-3);
 }
 
-.pillar-item { display: flex; flex-direction: column; gap: 6px; }
+@media (min-width: 700px) {
+  .pillar-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+  }
+  .pillar-item-header { flex-wrap: wrap; row-gap: 4px; }
+}
+
+.pillar-item { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
 .pillar-item-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .pillar-item-label {
@@ -162,24 +219,26 @@
    SCREEN 3 — STREAK NUDGE
 ───────────────────────────────────────── */
 #screen-nudge {
-  background: var(--bg-page);
+  background: transparent;
 }
 
 .nudge-card {
-  background: var(--color-amber-light);
-  border: 1px solid rgba(245,166,35,0.25);
+  background: linear-gradient(160deg, rgba(245,166,35,0.22), rgba(245,166,35,0.08));
+  border: 1px solid rgba(245,166,35,0.3);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-streak);
   padding: var(--space-8) var(--space-6);
   margin: var(--space-8) 0 var(--space-6);
   text-align: center;
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 
 .nudge-flame {
   width: 56px;
   height: 56px;
   border-radius: var(--radius-full);
-  background: var(--color-amber);
+  background: linear-gradient(135deg, var(--color-amber), #D4911F);
   color: var(--color-white);
   display: flex;
   align-items: center;
@@ -191,7 +250,7 @@
 .nudge-headline {
   font-size: 22px;
   font-weight: 700;
-  color: var(--color-charcoal);
+  color: var(--text-primary);
   margin-bottom: var(--space-2);
 }
 
@@ -207,15 +266,40 @@
   gap: var(--space-3);
 }
 
+@media (min-width: 600px) {
+  .nudge-actions {
+    flex-direction: row;
+  }
+}
+
 /* ─────────────────────────────────────────
    SCREEN 4 — DRAFT EDITOR
 ───────────────────────────────────────── */
 #screen-draft {
-  background: var(--bg-page);
+  background: transparent;
 }
 
 .draft-section {
   margin-bottom: var(--space-5);
+}
+
+/* Wide dashboard 2-col editor: main = Hook/Story/Takeaway/CTA, side = Visuals */
+.draft-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 900px) {
+  .draft-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: var(--space-8);
+    align-items: start;
+  }
+  .draft-grid-side {
+    position: sticky;
+    top: calc(var(--space-3) + 56px + var(--space-4));
+  }
 }
 
 .draft-section-header {
@@ -246,8 +330,8 @@
 .hook-options { display: flex; flex-direction: column; gap: var(--space-2); }
 
 .hook-card {
-  background: var(--bg-surface);
-  border: 1.5px solid var(--border-default);
+  background: var(--glass-surface);
+  border: 1.5px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
   cursor: pointer;
@@ -255,12 +339,14 @@
   line-height: 1.55;
   color: var(--text-primary);
   transition: border-color var(--motion-fast), background var(--motion-fast);
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 .hook-card:hover { border-color: var(--color-sky-blue); }
 .hook-card.selected {
   border-color: var(--color-stride-blue);
-  background: var(--color-pale-blue);
-  color: var(--color-deep-blue);
+  background: rgba(46,127,184,0.16);
+  color: var(--text-primary);
 }
 
 /* Story bullets */
@@ -284,7 +370,7 @@
 
 /* Takeaway block */
 .takeaway-block {
-  background: var(--color-ghost);
+  background: var(--glass-surface);
   border-left: 3px solid var(--color-stride-blue);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: var(--space-3) var(--space-4);
@@ -292,6 +378,8 @@
   line-height: 1.6;
   color: var(--text-primary);
   font-style: italic;
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 
 /* CTA chips */
@@ -301,7 +389,7 @@
 .visual-thumb {
   width: 100%;
   height: 140px;
-  background: var(--color-ghost);
+  background: var(--glass-surface);
   border-radius: var(--radius-md);
   border: 1px dashed var(--color-mist);
   display: flex;
@@ -343,18 +431,37 @@
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 420px;
-  background: var(--bg-surface);
-  border-top: 1px solid var(--border-default);
+  max-width: var(--dashboard-w);
+  background: var(--glass-surface-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: var(--space-3) var(--space-4);
+  margin-bottom: 0;
   z-index: 50;
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+@media (min-width: 600px) {
+  .draft-sticky-bar {
+    bottom: var(--space-4);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--glass-shadow);
+  }
+}
+
+/* Keep the floating dev-menu / theme-toggle buttons clear of the
+   sticky publish bar so they don't overlap it on the Draft screen. */
+body:has(#screen-draft.active) #dev-menu,
+body:has(#screen-draft.active) #theme-toggle {
+  bottom: calc(var(--space-4) + 64px);
 }
 
 /* ─────────────────────────────────────────
    SCREEN 5 — PUBLISHED
 ───────────────────────────────────────── */
 #screen-published {
-  background: var(--bg-page);
+  background: transparent;
 }
 
 .published-hero {
@@ -382,11 +489,13 @@
 
 .analytics-card {
   flex: 1;
-  background: var(--bg-surface);
-  border: 0.5px solid var(--border-default);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   text-align: center;
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 
 .analytics-num {
@@ -404,11 +513,40 @@
   margin-top: 2px;
 }
 
+/* Wide dashboard 2-col: main = hero + analytics, side = pillar unlocked + CTA */
+.published-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+@media (min-width: 900px) {
+  .published-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: var(--space-8);
+    align-items: start;
+  }
+  .published-grid-main .published-hero {
+    text-align: left;
+    padding: var(--space-6) 0 var(--space-6);
+  }
+  .published-grid-main .published-icon {
+    margin: 0 0 var(--space-4);
+  }
+}
+
+.published-grid-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 /* ─────────────────────────────────────────
    SCREEN 6 — COLLAB
 ───────────────────────────────────────── */
 #screen-collab {
-  background: var(--bg-page);
+  background: transparent;
 }
 
 .collab-authors {
@@ -439,11 +577,38 @@
   margin-bottom: var(--space-5);
 }
 
+.collab-merged-wrap,
+.collab-publish-wrap {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 420px) {
+  .collab-columns { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 1200px) {
+  .collab-columns {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+    align-items: start;
+  }
+  .collab-merged-wrap {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .collab-publish-wrap {
+    grid-column: 1 / -1;
+  }
+}
+
 .collab-col {
-  background: var(--bg-surface);
+  background: var(--glass-surface);
   border-radius: var(--radius-md);
   padding: var(--space-3);
-  border: 0.5px solid var(--border-default);
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 
 .collab-col-label {
@@ -489,13 +654,17 @@
    SCREEN 7 — ADMIN DASHBOARD (desktop)
 ───────────────────────────────────────── */
 #screen-admin {
-  background: var(--bg-page);
+  background: transparent;
 }
 
 .admin-wrap {
-  max-width: 1100px;
+  max-width: var(--dashboard-w);
   margin: 0 auto;
   padding: var(--space-6);
+}
+
+@media (max-width: 600px) {
+  .admin-wrap { padding: var(--space-4); }
 }
 
 .admin-metrics {
@@ -505,15 +674,24 @@
   margin-bottom: var(--space-8);
 }
 
-.metric-card {
-  background: var(--bg-surface);
-  border: 0.5px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-5);
-  transition: box-shadow var(--motion-base);
+@media (max-width: 900px) {
+  .admin-metrics { grid-template-columns: repeat(2, 1fr); }
 }
-.metric-card:hover { box-shadow: var(--shadow-md); }
+@media (max-width: 480px) {
+  .admin-metrics { grid-template-columns: 1fr; }
+}
+
+.metric-card {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  padding: var(--space-5);
+  transition: box-shadow var(--motion-base), transform var(--motion-base);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+}
+.metric-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 
 .metric-num {
   font-size: 32px;
@@ -535,11 +713,14 @@
 
 /* Admin cohort table */
 .admin-table-wrap {
-  background: var(--bg-surface);
-  border: 0.5px solid var(--border-default);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
+  overflow-x: auto;
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 
 .admin-table {
@@ -547,8 +728,12 @@
   border-collapse: collapse;
 }
 
+@media (max-width: 700px) {
+  .admin-table { min-width: 640px; }
+}
+
 .admin-table th {
-  background: var(--bg-page);
+  background: rgba(46,127,184,0.06);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -568,7 +753,7 @@
 }
 
 .admin-table tr:last-child td { border-bottom: none; }
-.admin-table tr:hover td { background: var(--bg-page); }
+.admin-table tr:hover td { background: rgba(46,127,184,0.06); }
 
 .admin-table .streak-num { font-weight: 600; color: var(--color-amber); }
 .admin-table .streak-num.low { color: var(--text-muted); }
@@ -590,32 +775,37 @@
 }
 
 #dev-menu-toggle {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
-  background: rgba(46,127,184,0.12);
-  border: 1px solid var(--color-pale-blue);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   color: var(--color-stride-blue);
-  transition: background var(--motion-fast);
+  transition: background var(--motion-fast), transform var(--motion-fast);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
-#dev-menu-toggle:hover { background: var(--color-pale-blue); }
+#dev-menu-toggle:hover { transform: scale(1.06); }
 
 #dev-menu-panel {
   display: none;
   position: absolute;
-  bottom: 44px;
+  bottom: 48px;
   right: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
+  background: var(--glass-surface-strong);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--glass-shadow);
   padding: var(--space-2);
   min-width: 180px;
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 #dev-menu-panel.open { display: block; }
 
@@ -634,7 +824,7 @@
   width: 100%;
   text-align: left;
 }
-.dev-menu-item:hover { background: var(--bg-page); }
+.dev-menu-item:hover { background: rgba(46,127,184,0.1); }
 .dev-menu-item .num {
   font-size: 10px;
   font-weight: 700;
