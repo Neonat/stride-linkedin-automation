@@ -32,6 +32,116 @@
 }
 
 /* ─────────────────────────────────────────
+   SCREEN 0 — LANDING PAGE
+───────────────────────────────────────── */
+#screen-landing { background: var(--bg-page); }
+
+.landing-inner {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 0 var(--space-5) var(--space-12);
+}
+
+.landing-hero {
+  padding: var(--space-12) 0 var(--space-10);
+  text-align: center;
+}
+
+.landing-hero-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-bottom: var(--space-8);
+}
+.landing-hero-logo .logo-text {
+  font-size: 28px; font-weight: 700;
+  color: var(--color-charcoal); letter-spacing: -0.5px;
+}
+.landing-hero-logo .logo-box {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--color-stride-blue); color: var(--color-white);
+  font-size: 28px; font-weight: 700; border-radius: 10px;
+  padding: 0 4px; letter-spacing: -0.5px;
+}
+
+.landing-headline {
+  font-size: 26px; font-weight: 700; line-height: 1.25;
+  color: var(--text-primary); margin-bottom: var(--space-4);
+  white-space: pre-line;
+}
+
+.landing-subline {
+  font-size: 15px; color: var(--text-secondary);
+  line-height: 1.6; margin-bottom: var(--space-8);
+}
+
+.landing-scroll-hint {
+  display: flex; justify-content: center;
+  margin-top: var(--space-5); color: var(--color-mist);
+}
+
+.landing-section { margin-bottom: var(--space-10); }
+
+.landing-section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--color-stride-blue);
+  margin-bottom: var(--space-4);
+}
+
+.problem-cards { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.problem-card {
+  display: flex; align-items: center; gap: var(--space-4);
+  background: var(--bg-surface); border: 0.5px solid var(--border-default);
+  border-radius: var(--radius-md); padding: var(--space-4);
+}
+
+.problem-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: var(--bg-page); border: 1px solid var(--border-default);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--text-muted);
+}
+
+.problem-text { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+
+.how-steps { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.how-step { display: flex; gap: var(--space-4); align-items: flex-start; }
+
+.how-step-num {
+  width: 28px; height: 28px; border-radius: var(--radius-full);
+  background: var(--color-pale-blue); color: var(--color-deep-blue);
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+
+.how-step-text { font-size: 14px; color: var(--text-secondary); line-height: 1.6; padding-top: 4px; }
+
+.feature-cards { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.feature-card {
+  background: var(--bg-surface); border: 0.5px solid var(--border-default);
+  border-radius: var(--radius-lg); padding: var(--space-4);
+  display: flex; gap: var(--space-4); align-items: flex-start;
+}
+
+.feature-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: var(--color-pale-blue); display: flex;
+  align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--color-stride-blue);
+}
+
+.feature-card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.feature-card-desc  { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+.landing-cta { padding: var(--space-8) 0 var(--space-4); text-align: center; }
+.landing-cta p { font-size: 13px; color: var(--text-muted); margin-top: var(--space-3); }
+
+/* ─────────────────────────────────────────
    SCREEN 1 — ONBOARDING
 ───────────────────────────────────────── */
 #screen-onboarding {
