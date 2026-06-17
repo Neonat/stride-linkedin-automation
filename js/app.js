@@ -4,6 +4,41 @@
    DEMO DATA
 ───────────────────────────────────────── */
 const demoData = {
+  landing: {
+    headline: "Your story is already happening.\nStride helps you share it.",
+    subline: "Build your personal brand one moment at a time — without the blank page.",
+    problems: [
+      { text: "Moments pass and you forget to post about them." },
+      { text: "You worry you'll sound try-hard or like AI wrote it." },
+      { text: "You open a blank post and close it five minutes later." },
+    ],
+    howItWorks: [
+      "Set your pillars once — we learn what you want to be known for.",
+      "Stride catches your moments from your calendar and activity.",
+      "It drafts posts in your voice so you just review and publish.",
+    ],
+    features: [
+      { title: "Moment capture + streak",    desc: "Never miss a post-worthy moment again." },
+      { title: "Drafts that sound like you", desc: "No AI-speak, no buzzwords, just your voice." },
+      { title: "Collab posts with a friend", desc: "Co-author a post and reach both audiences." },
+    ],
+  },
+
+  onboarding: {
+    role:    "Student",
+    field:   "AI",
+    wants:   ["Internships", "Collaborations"],
+    tone:    "Direct",
+    pillars: ["Technical", "Leadership", "Community"],
+  },
+
+  profile: {
+    persona:     "Final-year CS student building in AI",
+    positioning: "I share what I learn at the intersection of engineering and real-world impact — so others can move faster.",
+    tone:        "Direct",
+    pillars:     ["Technical", "Leadership", "Community"],
+  },
+
   user: {
     name: "Alex Tan",
     initials: "AT",
@@ -91,30 +126,65 @@ function showScreen(id) {
 }
 
 /* ─────────────────────────────────────────
-   ONBOARDING
+   ONBOARDING — 5 steps + profile payoff
 ───────────────────────────────────────── */
 let currentStep = 1;
-const totalSteps = 3;
+const TOTAL_STEPS = 5;
+const SINGLE_SELECT_STEPS = new Set([1, 2, 4]); // role, field, tone — auto-advance
 
 function goToStep(n) {
   document.querySelectorAll(".onboarding-step").forEach(s => s.classList.remove("active"));
   document.querySelectorAll(".step-dot").forEach((d, i) => {
     d.classList.toggle("active", i + 1 === n);
   });
+  if (n > TOTAL_STEPS) {
+    showProfileCard();
+    return;
+  }
   const step = document.getElementById("onboarding-step-" + n);
   if (step) step.classList.add("active");
   currentStep = n;
 }
 
 function nextStep() {
-  if (currentStep < totalSteps) {
-    goToStep(currentStep + 1);
-  } else {
-    showScreen("home");
-  }
+  goToStep(currentStep + 1);
 }
 
-/* Pillar chip multi-select */
+function showProfileCard() {
+  document.querySelectorAll(".onboarding-step").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".step-dot").forEach(d => d.classList.remove("active"));
+  const profile = document.getElementById("onboarding-profile");
+  if (profile) profile.classList.add("active");
+}
+
+function initSingleSelectStep(stepEl) {
+  stepEl.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      stepEl.querySelectorAll(".chip").forEach(c => c.classList.remove("selected"));
+      chip.classList.add("selected");
+      setTimeout(() => nextStep(), 180);
+    });
+  });
+}
+
+function initMultiSelectStep(stepEl) {
+  stepEl.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => chip.classList.toggle("selected"));
+  });
+}
+
+function initOnboarding() {
+  [1, 2, 4].forEach(n => {
+    const el = document.getElementById("onboarding-step-" + n);
+    if (el) initSingleSelectStep(el);
+  });
+  [3, 5].forEach(n => {
+    const el = document.getElementById("onboarding-step-" + n);
+    if (el) initMultiSelectStep(el);
+  });
+}
+
+/* kept for slider on any remaining step */
 function initPillarChips() {
   document.querySelectorAll(".onboarding-chips .chip").forEach(chip => {
     chip.addEventListener("click", () => {
@@ -216,6 +286,9 @@ function initDevMenu() {
       if (screen === "published") {
         showScreen("published");
         setTimeout(runPublishedAnimation, 100);
+      } else if (screen === "onboarding") {
+        showScreen("onboarding");
+        goToStep(1);
       } else {
         showScreen(screen);
       }
@@ -227,18 +300,19 @@ function initDevMenu() {
    WIRE BUTTONS
 ───────────────────────────────────────── */
 function wireButtons() {
-  // Onboarding advance buttons
   document.querySelectorAll("[data-next-step]").forEach(btn => {
     btn.addEventListener("click", nextStep);
   });
 
-  // Generic screen-nav buttons
   document.querySelectorAll("[data-goto]").forEach(btn => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.goto;
       if (target === "published") {
         showScreen("published");
         setTimeout(runPublishedAnimation, 100);
+      } else if (target === "onboarding") {
+        showScreen("onboarding");
+        goToStep(1);
       } else {
         showScreen(target);
       }
@@ -251,11 +325,12 @@ function wireButtons() {
 ───────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
   goToStep(1);
+  initOnboarding();
   initPillarChips();
   initSlider();
   initDraftEditor();
   initDevMenu();
   initThemeToggle();
   wireButtons();
-  showScreen("onboarding");
+  showScreen("landing");
 });
