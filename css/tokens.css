@@ -38,7 +38,7 @@
   --border-active:      #2E7FB8;
   --text-primary:       #3D3D3D;
   --text-secondary:     #5A5A5A;
-  --text-muted:         #8C8C8C;
+  --text-muted:         #6F6F6F;
   --text-on-blue:       #FFFFFF;
   --action-primary:     #2E7FB8;
   --action-primary-hover: #1A5F8A;
@@ -94,45 +94,45 @@
   --fs-h1:      clamp(1.375rem, 1.25rem + 0.5vw, 1.625rem);
   --fs-h2:      clamp(1.125rem, 1.05rem + 0.35vw, 1.375rem);
   --fs-h3:      clamp(1.0625rem, 1rem + 0.2vw, 1.125rem);
-  --fs-body:    clamp(0.9375rem, 0.9rem + 0.15vw, 1.0625rem);
-  --fs-small:   clamp(0.8125rem, 0.8rem + 0.1vw, 0.875rem);
-  --fs-label:   0.75rem;
-  --fs-caption: 0.6875rem;
-  --fs-draft:   clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+  --fs-body:    clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-small:   clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem);
+  --fs-label:   0.8125rem;
+  --fs-caption: 0.75rem;
+  --fs-draft:   clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
 
   /* ── Responsive container width (single-column, scales up) ── */
   --container-w: 92vw;
 
   /* ── Wide dashboard width (Home/Draft/Published/Collab/Admin desktop grids) ── */
-  --dashboard-w: 92vw;
+  --dashboard-w: 96vw;
 
   /* ── Glassmorphism ── */
-  --glass-surface:    rgba(255,255,255,0.45);
-  --glass-surface-strong: rgba(255,255,255,0.65);
-  --glass-border:     rgba(255,255,255,0.6);
-  --glass-highlight:  rgba(255,255,255,0.9);
-  --glass-blur:       32px;
-  --glass-blur-sm:    16px;
-  --glass-shadow:     0 12px 40px rgba(31,45,61,0.08);
+  --glass-surface:    rgba(255,255,255,0.25);
+  --glass-surface-strong: rgba(255,255,255,0.45);
+  --glass-border:     rgba(255,255,255,0.4);
+  --glass-highlight:  rgba(255,255,255,0.7);
+  --glass-blur:       48px;
+  --glass-blur-sm:    24px;
+  --glass-shadow:     0 12px 40px rgba(31,45,61,0.15);
 
   /* ── Ambient gradient blobs ── */
   --blob-1: #2E7FB8;
   --blob-2: #5BA3D0;
   --blob-3: #8E44AD;
   --blob-4: #F5A623;
-  --blob-opacity: 0.55;
+  --blob-opacity: 0.85;
 }
 
 /* ── Breakpoints: container grows, stays single column ── */
-@media (min-width: 600px)  { :root { --container-w: 520px; } }
-@media (min-width: 900px)  { :root { --container-w: 700px; } }
-@media (min-width: 1200px) { :root { --container-w: 800px; } }
+@media (min-width: 600px)  { :root { --container-w: 85vw; } }
+@media (min-width: 900px)  { :root { --container-w: 75vw; } }
+@media (min-width: 1200px) { :root { --container-w: 60vw; } }
 
 /* ── Breakpoints: dashboard width (Home/Draft/Published/Collab/Admin) ── */
-@media (min-width: 600px)  { :root { --dashboard-w: 560px; } }
-@media (min-width: 900px)  { :root { --dashboard-w: 92vw; } }
-@media (min-width: 1200px) { :root { --dashboard-w: 1300px; } }
-@media (min-width: 1600px) { :root { --dashboard-w: 1600px; } }
+@media (min-width: 600px)  { :root { --dashboard-w: 92vw; } }
+@media (min-width: 900px)  { :root { --dashboard-w: 96vw; } }
+@media (min-width: 1200px) { :root { --dashboard-w: 98vw; } }
+@media (min-width: 1600px) { :root { --dashboard-w: 100vw; } }
 
 /* ─────────────────────────────────────────
    DARK MODE — same role tokens, dark values
@@ -143,9 +143,9 @@
   --bg-surface-raised:  #212930;
   --border-default:     #2A343E;
   --border-active:      #5BA3D0;
-  --text-primary:       #F0F4F8;
-  --text-secondary:     #9CAAB8;
-  --text-muted:         #8492A3;
+  --text-primary:       #F8FAFC;
+  --text-secondary:     #B8C6D6;
+  --text-muted:         #A1B0C0;
   --action-primary:     #5BA3D0;
   --action-primary-hover: #2E7FB8;
 
@@ -153,11 +153,11 @@
   --shadow-md:  0 4px 14px rgba(0,0,0,0.40);
   --shadow-lg:  0 10px 28px rgba(0,0,0,0.45);
 
-  --glass-surface:    rgba(20,25,32,0.45);
-  --glass-surface-strong: rgba(20,25,32,0.75);
-  --glass-border:     rgba(255,255,255,0.15);
-  --glass-highlight:  rgba(255,255,255,0.08);
-  --glass-shadow:     0 12px 40px rgba(0,0,0,0.5);
+  --glass-surface:    rgba(255,255,255,0.04);
+  --glass-surface-strong: rgba(255,255,255,0.08);
+  --glass-border:     rgba(255,255,255,0.2);
+  --glass-highlight:  rgba(255,255,255,0.1);
+  --glass-shadow:     0 12px 40px rgba(0,0,0,0.7);
 
-  --blob-opacity: 0.30;
+  --blob-opacity: 0.9;
 }

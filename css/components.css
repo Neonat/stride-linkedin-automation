@@ -9,7 +9,7 @@ html { color-scheme: light dark; }
 
 body {
   font-family: var(--font-family);
-  background: var(--bg-page);
+  background: transparent;
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -29,37 +29,38 @@ body {
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  background: var(--bg-page);
 }
 
 .blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(70px);
+  filter: blur(100px);
   opacity: var(--blob-opacity);
   will-change: transform;
   transition: opacity var(--motion-slow);
 }
 
 .blob-1 {
-  width: 70vmax; height: 70vmax;
+  width: 100vmax; height: 100vmax;
   left: -20vmax; top: -20vmax;
   background: radial-gradient(circle at 35% 35%, var(--blob-1), transparent 70%);
   animation: blobFloat1 28s ease-in-out infinite;
 }
 .blob-2 {
-  width: 65vmax; height: 65vmax;
+  width: 90vmax; height: 90vmax;
   right: -15vmax; top: 5%;
   background: radial-gradient(circle at 65% 35%, var(--blob-2), transparent 70%);
   animation: blobFloat2 32s ease-in-out infinite;
 }
 .blob-3 {
-  width: 60vmax; height: 60vmax;
+  width: 80vmax; height: 80vmax;
   left: 5%; bottom: -25vmax;
   background: radial-gradient(circle at 50% 50%, var(--blob-3), transparent 70%);
   animation: blobFloat3 36s ease-in-out infinite;
 }
 .blob-4 {
-  width: 50vmax; height: 50vmax;
+  width: 70vmax; height: 70vmax;
   right: 8%; bottom: -15vmax;
   background: radial-gradient(circle at 50% 50%, var(--blob-4), transparent 70%);
   animation: blobFloat1 24s ease-in-out infinite reverse;
@@ -81,6 +82,24 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .blob { animation: none !important; }
 }
+
+/* ─────────────────────────────────────────
+   GLOBAL ANIMATIONS
+───────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0; /* Ensures it's hidden before animation starts */
+}
+
+/* Stagger utilities */
+.delay-1 { animation-delay: 100ms; }
+.delay-2 { animation-delay: 200ms; }
+.delay-3 { animation-delay: 300ms; }
 
 /* ─────────────────────────────────────────
    TYPOGRAPHY UTILITIES
@@ -114,7 +133,7 @@ body {
   background: var(--glass-surface);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-highlight), inset 0 0 20px rgba(255,255,255,0.05);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
   position: sticky;
@@ -138,10 +157,10 @@ body {
 }
 
 .navbar-logo-text {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
 }
 
 .navbar-logo-box {
@@ -150,11 +169,11 @@ body {
   justify-content: center;
   background: linear-gradient(135deg, var(--color-stride-blue), var(--color-deep-blue));
   color: var(--color-white);
-  font-size: 20px;
-  font-weight: 700;
-  border-radius: 10px;
-  padding: 0 3px;
-  letter-spacing: -0.3px;
+  font-size: 26px;
+  font-weight: 800;
+  border-radius: 12px;
+  padding: 0 4px;
+  letter-spacing: -0.5px;
 }
 
 .navbar-center {
@@ -197,6 +216,7 @@ body {
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
 }
+
 
 .avatar-purple { background: linear-gradient(135deg, #8E44AD, #6B3FA0); }
 .avatar-lg {
@@ -281,12 +301,18 @@ body {
   background: var(--glass-surface);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-highlight);
-  padding: var(--space-4);
+  box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-highlight), inset 0 0 20px rgba(255,255,255,0.05);
+  padding: var(--space-6);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
   position: relative;
   transition: background var(--motion-slow), border-color var(--motion-slow), transform var(--motion-base), box-shadow var(--motion-base);
+  display: flex;
+  flex-direction: column;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), inset 0 1px 1px var(--glass-highlight), inset 0 0 20px rgba(255,255,255,0.1);
 }
 .card::before {
   content: "";
@@ -360,12 +386,14 @@ body {
 /* Onboarding profile payoff card */
 .profile-payoff {
   width: 100%;
-  background: var(--bg-surface);
-  border: 0.5px solid var(--border-default);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-highlight);
   padding: var(--space-5);
   margin-bottom: var(--space-6);
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
 }
 .profile-payoff-title {
   font-size: 11px; font-weight: 700; letter-spacing: 0.8px;

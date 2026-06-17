@@ -297,9 +297,70 @@ function initDevMenu() {
 }
 
 /* ─────────────────────────────────────────
-   WIRE BUTTONS
+   WIRE BUTTONS & API CALLS
 ───────────────────────────────────────── */
+async function fetchDraftFromBackend(btn) {
+  const originalText = btn.textContent;
+  btn.textContent = "Generating...";
+  btn.disabled = true;
+  try {
+    const res = await fetch("http://localhost:8000/api/draft/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event_description: "Hack4Good",
+        user_context: demoData.profile
+      })
+    });
+    if (res.ok) {
+      const draft = await res.json();
+      console.log("Draft received:", draft);
+    }
+  } catch (e) {
+    console.warn("Backend not running, falling back to local demoData");
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+    showScreen("draft");
+  }
+}
+
+async function publishToLinkedIn(btn) {
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; margin-right:8px;"></span>Publishing...`;
+  btn.disabled = true;
+  try {
+    const res = await fetch("http://localhost:8000/api/publish/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_urn: "urn:li:person:12345",
+        post_text: "My awesome post"
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      console.log("Publish success", data);
+    }
+  } catch (e) {
+    console.warn("Backend not running, simulating publish");
+  } finally {
+    btn.innerHTML = originalHtml;
+    btn.disabled = false;
+    showScreen("published");
+    setTimeout(runPublishedAnimation, 100);
+  }
+}
+
 function wireButtons() {
+  // Add simple spin keyframes if not exists
+  if (!document.getElementById('spin-style')) {
+    const style = document.createElement('style');
+    style.id = 'spin-style';
+    style.innerHTML = `@keyframes spin { to { transform: rotate(360deg); } }`;
+    document.head.appendChild(style);
+  }
+
   document.querySelectorAll("[data-next-step]").forEach(btn => {
     btn.addEventListener("click", nextStep);
   });
@@ -307,9 +368,11 @@ function wireButtons() {
   document.querySelectorAll("[data-goto]").forEach(btn => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.goto;
-      if (target === "published") {
-        showScreen("published");
-        setTimeout(runPublishedAnimation, 100);
+      
+      if (target === "draft") {
+        fetchDraftFromBackend(btn);
+      } else if (target === "published") {
+        publishToLinkedIn(btn);
       } else if (target === "onboarding") {
         showScreen("onboarding");
         goToStep(1);
@@ -319,6 +382,71 @@ function wireButtons() {
     });
   });
 }
+
+window.handleLogin = async function() {
+  const btn = document.getElementById("btn-login-submit");
+  const err = document.getElementById("login-error");
+  const user = document.getElementById("login-email").value;
+  const pass = document.getElementById("login-password").value;
+  
+  btn.textContent = "Signing In...";
+  err.style.display = "none";
+  
+  try {
+    const res = await fetch("http://localhost:8000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      console.log("Logged in as", data.user.name);
+      showScreen("onboarding");
+      goToStep(1);
+    } else {
+      err.textContent = "Invalid credentials. Try demo / password.";
+      err.style.display = "block";
+    }
+  } catch (e) {
+    // Graceful degradation for frontend-only demo
+    console.warn("Backend not running, bypassing login locally.");
+    showScreen("onboarding");
+    goToStep(1);
+  } finally {
+    btn.textContent = "Sign In";
+  }
+};
+
+window.toggleProfileMenu = function(e) {
+  e.stopPropagation();
+  const menu = e.currentTarget.nextElementSibling;
+  
+  // Close any other open menus
+  document.querySelectorAll(".profile-menu.open").forEach(m => {
+    if (m !== menu) m.classList.remove("open");
+  });
+  
+  menu.classList.toggle("open");
+};
+
+window.handleLogout = function() {
+  console.log("User logged out");
+  // Hide all open menus
+  document.querySelectorAll(".profile-menu.open").forEach(m => m.classList.remove("open"));
+  
+  // Clear mock session
+  document.getElementById("login-email").value = "";
+  document.getElementById("login-password").value = "";
+  
+  // Return to login screen
+  showScreen("login");
+};
+
+// Close menu when clicking anywhere else
+document.addEventListener("click", () => {
+  document.querySelectorAll(".profile-menu.open").forEach(m => m.classList.remove("open"));
+});
 
 /* ─────────────────────────────────────────
    BOOT
