@@ -604,7 +604,7 @@ body.on-landing .bg-blobs { display: none; }
   color: var(--text-primary);
 }
 
-/* Story bullets */
+/* Story bullets — editable */
 .story-bullets { display: flex; flex-direction: column; gap: var(--space-2); }
 .story-bullet {
   display: flex;
@@ -620,25 +620,134 @@ body.on-landing .bg-blobs { display: none; }
   border-radius: 50%;
   background: var(--color-stride-blue);
   flex-shrink: 0;
-  margin-top: 7px;
+  margin-top: 9px;
 }
-
-/* Takeaway block */
-.takeaway-block {
-  background: var(--glass-surface);
-  border-left: 3px solid var(--color-stride-blue);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: var(--space-3) var(--space-4);
+.story-bullet-textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
-  font-style: italic;
-  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
-  backdrop-filter: blur(var(--glass-blur-sm));
+  font-family: var(--font-family);
+  resize: none;
+  padding: 0;
+  min-height: 44px;
 }
+.story-bullet-textarea::placeholder { color: var(--text-muted); }
 
 /* CTA chips */
 .cta-chips { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* Generate button — sits in the draft-section-header */
+.btn-generate {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-stride-blue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  transition: background var(--motion-fast), opacity var(--motion-fast);
+  white-space: nowrap;
+}
+.btn-generate:hover:not(:disabled) { background: var(--color-deep-blue); }
+.btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* AI pulse — loading state while generating */
+.ai-pulse-wrap {
+  background: var(--glass-surface);
+  border: 1.5px solid var(--color-stride-blue);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  animation: ai-pulse-glow 1.5s ease-in-out infinite;
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
+}
+.ai-pulse-text {
+  color: var(--color-stride-blue);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.ai-pulse-dots span {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-stride-blue);
+  animation: ai-dot-bounce 1.2s ease-in-out infinite;
+}
+.ai-pulse-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-pulse-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ai-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(46,127,184,0); }
+  50%       { box-shadow: 0 0 0 5px rgba(46,127,184,0.15); }
+}
+@keyframes ai-dot-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40%           { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Draft output — editable generated post */
+.draft-placeholder {
+  background: var(--glass-surface);
+  border: 1.5px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
+}
+.draft-placeholder strong { color: var(--text-secondary); }
+
+.draft-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 220px;
+  background: var(--glass-surface);
+  border: 1.5px solid var(--border-active);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-size: var(--fs-draft);
+  line-height: 1.75;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  resize: vertical;
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
+  transition: border-color var(--motion-base);
+}
+.draft-textarea:focus {
+  outline: none;
+  border-color: var(--color-stride-blue);
+  box-shadow: 0 0 0 3px rgba(46,127,184,0.12);
+}
+
+/* Inline error */
+.draft-error-msg {
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-red-light);
+  color: var(--color-red);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.5;
+}
 
 /* Visuals */
 .visual-thumb {

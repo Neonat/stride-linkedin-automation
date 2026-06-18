@@ -352,6 +352,101 @@ function initDraftEditor() {
       demoData.draft.selectedCta = i;
     });
   });
+
+  // Generate button
+  const genBtn = document.getElementById("btn-generate");
+  if (genBtn) genBtn.addEventListener("click", generateDraft);
+}
+
+/* ─────────────────────────────────────────
+   DRAFT GENERATOR — calls /api/draft
+───────────────────────────────────────── */
+async function generateDraft() {
+  // Collect hook
+  const hookEl = document.querySelector(".hook-card.selected");
+  const hook = hookEl ? hookEl.textContent.trim() : "";
+  if (!hook) {
+    setDraftState("error", "Please select a hook first.");
+    return;
+  }
+
+  // Collect story bullets from editable textareas
+  const storyBullets = Array.from(
+    document.querySelectorAll(".story-bullet-textarea")
+  ).map(t => t.value.trim()).filter(Boolean);
+  if (storyBullets.length === 0) {
+    setDraftState("error", "Please fill in at least one story bullet.");
+    return;
+  }
+
+  // CTA
+  const ctaEl = document.querySelector(".cta-chips .chip.selected");
+  const cta = ctaEl ? ctaEl.textContent.trim() : "Follow";
+
+  // Tone from onboarding data; pillar from the navbar chip
+  const tone = (demoData.onboarding && demoData.onboarding.tone) || "Direct";
+  const pillarEl = document.querySelector("#screen-draft .navbar .chip");
+  const pillar = pillarEl ? pillarEl.textContent.trim() : "Community";
+
+  setDraftState("generating");
+
+  try {
+    const resp = await fetch("/api/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hook, storyBullets, cta, tone, pillar }),
+    });
+
+    let data;
+    try { data = await resp.json(); }
+    catch { data = { ok: false, error: "Server returned an unexpected response." }; }
+
+    if (data.ok) {
+      demoData.draft.generatedText = data.draft;
+      setDraftState("ready", data.draft);
+    } else {
+      setDraftState("error", data.error || "Something went wrong. Try again.");
+    }
+  } catch {
+    setDraftState("error", "Could not reach the server. Check your connection.");
+  }
+}
+
+function setDraftState(state, content) {
+  const generating = document.getElementById("draft-generating");
+  const placeholder = document.getElementById("draft-placeholder");
+  const output     = document.getElementById("draft-output");
+  const errorEl    = document.getElementById("draft-error");
+  const btn        = document.getElementById("btn-generate");
+
+  // Reset to neutral
+  if (generating) generating.hidden = true;
+  if (placeholder) placeholder.hidden = true;
+  if (output)      output.hidden = true;
+  if (errorEl)     errorEl.hidden = true;
+  if (btn)         btn.disabled = false;
+
+  if (state === "generating") {
+    if (generating) generating.hidden = false;
+    if (btn)        btn.disabled = true;
+  } else if (state === "ready") {
+    if (output) {
+      output.hidden = false;
+      output.value = content || "";
+      // auto-size to content
+      output.style.height = "auto";
+      output.style.height = output.scrollHeight + "px";
+    }
+  } else if (state === "error") {
+    if (placeholder) placeholder.hidden = false; // keep hint visible
+    if (errorEl) {
+      errorEl.hidden = false;
+      errorEl.textContent = content || "An error occurred.";
+    }
+  } else {
+    // "idle" — just show placeholder
+    if (placeholder) placeholder.hidden = false;
+  }
 }
 
 /* ─────────────────────────────────────────

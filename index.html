@@ -518,32 +518,19 @@ Stride helps you share it.</h1>
             <span class="draft-section-tag">Story</span>
             <span class="draft-section-title">The key moments</span>
           </div>
-          <div class="story-bullets">
+          <div class="story-bullets" id="story-bullets">
             <div class="story-bullet">
               <div class="story-bullet-dot"></div>
-              <span>Our team of 4 tackled food insecurity data for 47 community kitchens across Singapore.</span>
+              <textarea class="story-bullet-textarea" rows="2" placeholder="What happened?">Our team of 4 tackled food insecurity data for 47 community kitchens across Singapore.</textarea>
             </div>
             <div class="story-bullet">
               <div class="story-bullet-dot"></div>
-              <span>We built a real-time dashboard that flagged surplus inventory before it expired — cutting waste by 30%.</span>
+              <textarea class="story-bullet-textarea" rows="2" placeholder="What did you build or do?">We built a real-time dashboard that flagged surplus inventory before it expired — cutting waste by 30%.</textarea>
             </div>
             <div class="story-bullet">
               <div class="story-bullet-dot"></div>
-              <span>Presented to a panel of NGO leads and walked away with the Social Impact award.</span>
+              <textarea class="story-bullet-textarea" rows="2" placeholder="What was the outcome?">Presented to a panel of NGO leads and walked away with the Social Impact award.</textarea>
             </div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- TAKEAWAY -->
-        <div class="draft-section">
-          <div class="draft-section-header">
-            <span class="draft-section-tag">Takeaway</span>
-            <span class="draft-section-title">The lesson</span>
-          </div>
-          <div class="takeaway-block">
-            The best technical solutions aren't the most complex — they're the ones that solve a real human problem in the simplest possible way.
           </div>
         </div>
 
@@ -561,6 +548,41 @@ Stride helps you share it.</h1>
             <span class="chip chip-leadership">DM</span>
           </div>
           <p class="text-caption text-muted" style="margin-top:var(--space-2);">What do you want readers to do next?</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- DRAFT PREVIEW -->
+        <div class="draft-section">
+          <div class="draft-section-header">
+            <span class="draft-section-tag">Draft</span>
+            <span class="draft-section-title">Your post</span>
+            <button class="btn-generate" id="btn-generate">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Generate
+            </button>
+          </div>
+
+          <!-- Loading state -->
+          <div id="draft-generating" class="ai-pulse-wrap" hidden>
+            <div class="ai-pulse-text">
+              Writing your post
+              <span class="ai-pulse-dots">
+                <span></span><span></span><span></span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Placeholder before generate -->
+          <div id="draft-placeholder" class="draft-placeholder">
+            Pick a hook and CTA above, then click <strong>Generate</strong> to draft your post.
+          </div>
+
+          <!-- Generated + editable output -->
+          <textarea id="draft-output" class="draft-textarea" hidden placeholder="Your generated post will appear here…"></textarea>
+
+          <!-- Inline error -->
+          <div id="draft-error" class="draft-error-msg" hidden></div>
         </div>
 
       </div>
