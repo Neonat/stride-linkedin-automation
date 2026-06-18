@@ -1079,6 +1079,155 @@ Stride helps you share it.</h1>
 
 
 <!-- ═══════════════════════════════════════════════════
+     SCREEN 8 — CONNECT  (real Supabase backend)
+════════════════════════════════════════════════════ -->
+<section id="screen-connect" class="screen">
+
+  <!-- ── Loading splash ─────────────────────────────── -->
+  <div id="connect-loading" class="connect-state-wrap active">
+    <div class="connect-center">
+      <div class="ai-pulse-wrap" style="max-width:240px;">
+        <div class="ai-pulse-text">
+          Connecting
+          <span class="ai-pulse-dots"><span></span><span></span><span></span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Sign-in (not authenticated) ──────────────────── -->
+  <div id="connect-auth" class="connect-state-wrap">
+    <nav class="navbar">
+      <button class="navbar-back" data-goto="home">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+        Back
+      </button>
+      <span class="navbar-center">Connect</span>
+      <div style="width:40px;"></div>
+    </nav>
+    <div class="mobile-wrap" style="padding-top:var(--space-10);">
+      <div class="card" style="max-width:360px;margin:auto;">
+        <p class="text-h2" style="margin-bottom:var(--space-2);">Sign in to Stride</p>
+        <p class="text-body text-secondary" style="margin-bottom:var(--space-5);">
+          We'll send you a magic link — no password needed.
+        </p>
+        <label class="text-label text-secondary">Email</label>
+        <input type="email" id="connect-email" class="stride-input" placeholder="you@example.com"
+               autocomplete="email" style="margin-top:var(--space-1);" />
+        <button class="btn btn-primary" id="connect-magic-link-btn"
+                style="margin-top:var(--space-4);width:100%;">
+          Send magic link
+        </button>
+        <p id="connect-auth-feedback" class="text-small text-muted"
+           style="margin-top:var(--space-3);text-align:center;min-height:1.5em;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Profile setup (first time only) ──────────────── -->
+  <div id="connect-setup" class="connect-state-wrap">
+    <nav class="navbar">
+      <span class="navbar-center">Welcome to Stride</span>
+      <div style="width:40px;"></div>
+    </nav>
+    <div class="mobile-wrap" style="padding-top:var(--space-8);">
+      <div class="card" style="max-width:360px;margin:auto;">
+        <p class="text-h2" style="margin-bottom:var(--space-2);">Set up your profile</p>
+        <p class="text-body text-secondary" style="margin-bottom:var(--space-5);">
+          This is how other Stride users will see you.
+        </p>
+        <label class="text-label text-secondary">Name</label>
+        <input type="text" id="setup-name" class="stride-input" placeholder="Alex Tan"
+               style="margin-top:var(--space-1);" />
+        <label class="text-label text-secondary" style="display:block;margin-top:var(--space-4);">
+          Headline <span class="text-muted" style="font-weight:400;">(optional)</span>
+        </label>
+        <input type="text" id="setup-headline" class="stride-input"
+               placeholder="Final-year CS student at NTU"
+               style="margin-top:var(--space-1);" />
+        <button class="btn btn-primary" id="setup-save-btn"
+                style="margin-top:var(--space-5);width:100%;">
+          Save and continue
+        </button>
+        <p id="setup-feedback" class="text-small"
+           style="margin-top:var(--space-3);text-align:center;min-height:1.5em;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main: QR + code + connections ─────────────────── -->
+  <div id="connect-main" class="connect-state-wrap">
+
+    <nav class="navbar navbar-wide">
+      <button class="navbar-back" data-goto="home">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+        Back
+      </button>
+      <span class="navbar-center">Connect</span>
+      <div class="avatar" id="connect-avatar">?</div>
+    </nav>
+
+    <div class="mobile-wrap wrap-dashboard" style="padding-bottom:var(--space-10);">
+
+      <!-- QR code (proximity pairing — Phase 2) -->
+      <p class="section-label" style="margin-bottom:var(--space-3);">My QR code</p>
+      <div class="connect-qr-card card">
+        <div id="connect-qr-canvas" class="connect-qr-canvas">
+          <div class="connect-qr-placeholder" id="connect-qr-placeholder">
+            <span class="text-small text-muted" style="text-align:center;padding:var(--space-3);">
+              QR pairing available in the next update
+            </span>
+          </div>
+        </div>
+        <p class="text-small text-muted" style="margin-top:var(--space-3);text-align:center;">
+          Others can scan this to connect instantly
+        </p>
+      </div>
+
+      <div class="divider" style="margin:var(--space-6) 0;"></div>
+
+      <!-- Keyword code entry (remote pairing — Phase 3) -->
+      <p class="section-label" style="margin-bottom:var(--space-2);">Enter a code</p>
+      <p class="text-small text-secondary" style="margin-bottom:var(--space-3);">
+        Someone shared a word code with you? Enter it here.
+      </p>
+      <div class="connect-code-row">
+        <input type="text" id="connect-code-input" class="stride-input"
+               placeholder="word-word-word" autocomplete="off" />
+        <button class="btn btn-secondary" id="connect-code-submit">Request</button>
+      </div>
+      <p id="connect-code-msg" class="text-small" style="margin-top:var(--space-2);min-height:1.4em;"></p>
+
+      <!-- Incoming requests (pending confirm — Phase 3) -->
+      <div id="connect-pending-section" hidden>
+        <div class="divider" style="margin:var(--space-6) 0;"></div>
+        <p class="section-label" style="margin-bottom:var(--space-3);">
+          Incoming requests
+          <span id="connect-pending-count" class="badge badge-warning" style="margin-left:var(--space-2);"></span>
+        </p>
+        <div id="connect-pending-list"></div>
+      </div>
+
+      <div class="divider" style="margin:var(--space-6) 0;"></div>
+
+      <!-- Connections list -->
+      <p class="section-label" style="margin-bottom:var(--space-3);">Your connections</p>
+      <div id="connect-connections-list">
+        <p class="text-small text-muted">Loading…</p>
+      </div>
+
+      <!-- Sign out -->
+      <div style="margin-top:var(--space-8);text-align:center;">
+        <button class="btn btn-ghost btn-inline" id="connect-sign-out">Sign out</button>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
      DEV MENU — screen jumper
 ════════════════════════════════════════════════════ -->
 <div id="dev-menu">
@@ -1093,9 +1242,13 @@ Stride helps you share it.</h1>
     <button class="dev-menu-item" data-screen="published"><span class="num">5</span> Published</button>
     <button class="dev-menu-item" data-screen="collab"><span class="num">6</span> Collab Mode</button>
     <button class="dev-menu-item" data-screen="admin"><span class="num">7</span> Admin Dashboard</button>
+    <button class="dev-menu-item" data-screen="connect"><span class="num">8</span> Connect</button>
   </div>
 </div>
 
+
+<!-- Supabase JS SDK (used by the Connect screen) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script src="js/app.js?v=2"></script>
 </body>

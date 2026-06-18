@@ -1208,3 +1208,93 @@ body:has(#screen-draft.active) #theme-toggle {
   color: var(--text-muted);
   width: 14px;
 }
+
+/* ─────────────────────────────────────────
+   SCREEN 8 — CONNECT (real Supabase backend)
+───────────────────────────────────────── */
+#screen-connect { background: transparent; }
+
+/* State panels — only one visible at a time */
+.connect-state-wrap { display: none; }
+.connect-state-wrap.active { display: block; }
+
+/* Centered loading / auth card */
+.connect-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: var(--space-6);
+}
+
+/* QR card */
+.connect-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-6);
+}
+.connect-qr-canvas {
+  width: 200px;
+  height: 200px;
+  background: #fff;  /* QR codes need white background */
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: var(--space-3);
+  box-shadow: var(--shadow-md);
+}
+.connect-qr-canvas canvas,
+.connect-qr-canvas img { width: 100%; height: 100%; display: block; }
+.connect-qr-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Code entry row */
+.connect-code-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.connect-code-row .stride-input { flex: 1; }
+.connect-code-row .btn { flex-shrink: 0; }
+
+/* Pending request row */
+.connect-pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--glass-surface);
+  border: 1.5px solid var(--color-amber);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
+}
+.connect-pending-row .pending-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.connect-pending-row .pending-actions { display: flex; gap: var(--space-2); }
+
+/* Connection row */
+.connect-person-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+.connect-person-row:last-child { border-bottom: none; }
+.connect-person-info { flex: 1; min-width: 0; }
+.connect-person-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.connect-person-headline { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Inline feedback messages */
+.connect-feedback-ok  { color: var(--color-green); }
+.connect-feedback-err { color: var(--color-red); }
