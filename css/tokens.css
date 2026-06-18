@@ -121,6 +121,11 @@
   --blob-3: #8E44AD;
   --blob-4: #F5A623;
   --blob-opacity: 0.58;
+
+  /* ── Landing page background — locked to one blue/teal hue family ── */
+  --landing-bg-1: #EFF8FA;
+  --landing-bg-2: #DCEEFA;
+  --landing-bg-3: #C7E2F4;
 }
 
 /* ── Breakpoints: container grows, stays single column ── */
@@ -158,6 +163,10 @@
   --glass-border:     rgba(255,255,255,0.14);
   --glass-highlight:  rgba(255,255,255,0.08);
   --glass-shadow:     0 12px 40px rgba(0,0,0,0.7);
+
+  --landing-bg-1: #0D1A22;
+  --landing-bg-2: #11222E;
+  --landing-bg-3: #16303F;
 
   --blob-opacity: 0.42;
 }

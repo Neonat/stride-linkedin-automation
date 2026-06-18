@@ -123,6 +123,24 @@ function showScreen(id) {
     target.classList.add("active");
     window.scrollTo(0, 0);
   }
+  document.body.classList.toggle("on-landing", id === "landing");
+  if (id === "home") {
+    renderHomePillars();
+  }
+
+  // Handle global navbar visibility and active tabs
+  const globalNav = document.getElementById("global-nav");
+  if (globalNav) {
+    const navScreens = ["home", "posts", "collab", "settings"];
+    if (navScreens.includes(id)) {
+      globalNav.style.display = "flex";
+      globalNav.querySelectorAll(".nav-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.goto === id);
+      });
+    } else {
+      globalNav.style.display = "none";
+    }
+  }
 }
 
 /* ─────────────────────────────────────────
@@ -137,6 +155,22 @@ function goToStep(n) {
   document.querySelectorAll(".step-dot").forEach((d, i) => {
     d.classList.toggle("active", i + 1 === n);
   });
+  
+  const stepLabel = document.getElementById("onboarding-step-label");
+  if (stepLabel && n <= TOTAL_STEPS) {
+    stepLabel.textContent = `Step ${n} of 5`;
+  }
+  
+  const header = document.querySelector(".onboarding-header");
+  if (header && n <= TOTAL_STEPS) {
+    header.style.display = "flex";
+  }
+  
+  const backBtn = document.getElementById("btn-onboarding-back");
+  if (backBtn) {
+    backBtn.style.visibility = n > 1 && n <= TOTAL_STEPS ? "visible" : "hidden";
+  }
+
   if (n > TOTAL_STEPS) {
     showProfileCard();
     return;
@@ -153,8 +187,98 @@ function nextStep() {
 function showProfileCard() {
   document.querySelectorAll(".onboarding-step").forEach(s => s.classList.remove("active"));
   document.querySelectorAll(".step-dot").forEach(d => d.classList.remove("active"));
+  
+  const header = document.querySelector(".onboarding-header");
+  if (header) header.style.display = "none";
+  
   const profile = document.getElementById("onboarding-profile");
-  if (profile) profile.classList.add("active");
+  if (profile) {
+    profile.classList.add("active");
+    
+    const getSelection = (stepId) => {
+      const step = document.getElementById(stepId);
+      if (!step) return [];
+      return Array.from(step.querySelectorAll(".chip.selected")).map(c => c.textContent.trim());
+    };
+    
+    const role = getSelection("onboarding-step-1")[0] || "Professional";
+    const field = getSelection("onboarding-step-2")[0] || "Tech";
+    const goals = getSelection("onboarding-step-3");
+    const tone = getSelection("onboarding-step-4")[0] || "Professional";
+    const pillars = getSelection("onboarding-step-5");
+    window.userSelectedPillars = pillars.length > 0 ? pillars : demoData.user.pillars;
+    
+    const personaEl = profile.querySelector(".profile-persona");
+    if (personaEl) {
+      personaEl.textContent = `${role} building in ${field}`;
+    }
+    
+    const posEl = profile.querySelector(".profile-positioning");
+    if (posEl) {
+      let goalText = goals.length > 0 ? ` to attract ${goals.join(' and ')}` : "";
+      posEl.textContent = `I share my journey in ${field}${goalText} — keeping it ${tone.toLowerCase()} and authentic.`;
+    }
+    
+    const metaEl = profile.querySelector(".profile-meta");
+    if (metaEl) {
+      metaEl.innerHTML = "";
+      pillars.forEach(p => {
+        const span = document.createElement("span");
+        span.className = `chip chip-${p.toLowerCase()} selected`;
+        span.style = "font-size:11px;padding:2px 10px;pointer-events:none;";
+        span.textContent = p;
+        metaEl.appendChild(span);
+      });
+      const toneSpan = document.createElement("span");
+      toneSpan.className = "profile-tone-label";
+      toneSpan.textContent = tone;
+      metaEl.appendChild(toneSpan);
+    }
+  }
+}
+
+function renderHomePillars() {
+  const pillarContainer = document.querySelector("#screen-home .pillar-row");
+  if (!pillarContainer) return;
+
+  const userPillars = window.userSelectedPillars || demoData.user.pillars;
+  pillarContainer.innerHTML = "";
+
+  userPillars.forEach(pillarName => {
+    // Generate some mock stats or get from demoData
+    let data = demoData.pillarCoverage.find(p => p.name === pillarName);
+    if (!data) {
+      data = { name: pillarName, pct: Math.floor(Math.random() * 40) + 20, gap: false };
+    }
+
+    const html = `
+      <div class="pillar-item">
+        <div class="pillar-item-header" style="display:flex; justify-content:space-between; width:100%;">
+          <span class="pillar-item-label">${data.name}</span>
+          <span class="pillar-item-pct">${data.pct}%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width:${data.pct}%; ${data.gap ? 'background:var(--color-red);' : ''}"></div>
+        </div>
+        ${data.gap ? `
+        <div class="pillar-item-footer" style="display:flex; align-items:center; gap:var(--space-2); margin-top:4px;">
+          <span class="badge badge-warning">
+            <span class="icon" style="margin-right:2px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+            Gap
+          </span>
+          <p class="text-caption text-muted" style="margin:0;">${data.gapMsg || 'Needs more content'}</p>
+        </div>` : ''}
+      </div>
+    `;
+    pillarContainer.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+function updateContinueBtn(stepEl) {
+  const btn = stepEl.querySelector("[data-next-step]");
+  if (!btn) return;
+  const hasSelected = stepEl.querySelectorAll(".chip.selected").length > 0;
+  btn.disabled = !hasSelected;
 }
 
 function initSingleSelectStep(stepEl) {
@@ -162,15 +286,20 @@ function initSingleSelectStep(stepEl) {
     chip.addEventListener("click", () => {
       stepEl.querySelectorAll(".chip").forEach(c => c.classList.remove("selected"));
       chip.classList.add("selected");
-      setTimeout(() => nextStep(), 180);
+      updateContinueBtn(stepEl);
     });
   });
+  updateContinueBtn(stepEl);
 }
 
 function initMultiSelectStep(stepEl) {
   stepEl.querySelectorAll(".chip").forEach(chip => {
-    chip.addEventListener("click", () => chip.classList.toggle("selected"));
+    chip.addEventListener("click", () => {
+      chip.classList.toggle("selected");
+      updateContinueBtn(stepEl);
+    });
   });
+  updateContinueBtn(stepEl);
 }
 
 function initOnboarding() {
@@ -182,6 +311,13 @@ function initOnboarding() {
     const el = document.getElementById("onboarding-step-" + n);
     if (el) initMultiSelectStep(el);
   });
+
+  const backBtn = document.getElementById("btn-onboarding-back");
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      if (currentStep > 1) goToStep(currentStep - 1);
+    });
+  }
 }
 
 /* Personality slider gradient update */
@@ -244,14 +380,20 @@ function runPublishedAnimation() {
    THEME TOGGLE (dark mode)
 ───────────────────────────────────────── */
 function initThemeToggle() {
-  const toggle = document.getElementById("theme-toggle");
-  if (!toggle) return;
+  const toggles = [
+    document.getElementById("theme-toggle"),
+    document.getElementById("theme-toggle-settings")
+  ];
+  
   const root = document.documentElement;
 
-  toggle.addEventListener("click", () => {
-    const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    root.setAttribute("data-theme", next);
-    localStorage.setItem("stride-theme", next);
+  toggles.forEach(toggle => {
+    if (!toggle) return;
+    toggle.addEventListener("click", () => {
+      const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      localStorage.setItem("stride-theme", next);
+    });
   });
 }
 
