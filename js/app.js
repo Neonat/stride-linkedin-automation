@@ -555,30 +555,92 @@ async function fetchDraftFromBackend(btn) {
   }
 }
 
+function _showPublishError(msg) {
+  const el = document.getElementById("publish-error");
+  if (!el) return;
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+function _clearPublishError() {
+  const el = document.getElementById("publish-error");
+  if (el) { el.hidden = true; el.textContent = ""; }
+}
+
 async function publishToLinkedIn(btn) {
+  _clearPublishError();
+
+  // Get the current draft text — must be generated before publishing
+  const draftEl = document.getElementById("draft-output");
+  const text = draftEl ? draftEl.value.trim() : "";
+  if (!text) {
+    _showPublishError("Generate your post first, then publish.");
+    return;
+  }
+
   const originalHtml = btn.innerHTML;
-  btn.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; margin-right:8px;"></span>Publishing...`;
+  const spinner = `<span style="display:inline-block;width:12px;height:12px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px;"></span>`;
   btn.disabled = true;
+
   try {
-    const res = await fetch("http://localhost:8000/api/publish/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_urn: "urn:li:person:12345",
-        post_text: "My awesome post"
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      console.log("Publish success", data);
+    // ── Step 1: Safety check (Nemotron) ──────────────────────────────────
+    btn.innerHTML = spinner + "Checking…";
+    let safetyData;
+    try {
+      const safetyRes = await fetch("/api/safety_check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      safetyData = await safetyRes.json();
+    } catch {
+      // If safety endpoint unreachable, block publish
+      _showPublishError("Safety check failed. Check your connection and try again.");
+      return;
     }
-  } catch (e) {
-    console.warn("Backend not running, simulating publish");
+
+    if (!safetyData.ok) {
+      _showPublishError(`Safety check error: ${safetyData.error || "Unknown error"}`);
+      return;
+    }
+
+    if (!safetyData.safe) {
+      const cats = (safetyData.categories || []).map(c => c.label).join(", ");
+      _showPublishError(
+        cats
+          ? `Post flagged for: ${cats}. Edit your post and try again.`
+          : "Post flagged by content policy. Edit your post and try again."
+      );
+      return;
+    }
+
+    // ── Step 2: Publish to LinkedIn ───────────────────────────────────────
+    btn.innerHTML = spinner + "Publishing…";
+    let pubData;
+    try {
+      const pubRes = await fetch("/api/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      pubData = await pubRes.json();
+    } catch {
+      _showPublishError("Could not reach the server. Check your connection and try again.");
+      return;
+    }
+
+    if (!pubData.ok) {
+      _showPublishError(`Publish failed: ${pubData.error || "Unknown error"}`);
+      return;
+    }
+
+    // ── Step 3: Success ───────────────────────────────────────────────────
+    showScreen("published");
+    setTimeout(runPublishedAnimation, 100);
+
   } finally {
     btn.innerHTML = originalHtml;
     btn.disabled = false;
-    showScreen("published");
-    setTimeout(runPublishedAnimation, 100);
   }
 }
 
