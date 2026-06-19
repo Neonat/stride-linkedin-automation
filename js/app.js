@@ -141,6 +141,8 @@ function showScreen(id) {
       globalNav.style.display = "none";
     }
   }
+  // Connect screen has real backend — initialise on every visit
+  if (id === "connect") Connect.init();
 }
 
 /* ─────────────────────────────────────────
@@ -352,6 +354,101 @@ function initDraftEditor() {
       demoData.draft.selectedCta = i;
     });
   });
+
+  // Generate button
+  const genBtn = document.getElementById("btn-generate");
+  if (genBtn) genBtn.addEventListener("click", generateDraft);
+}
+
+/* ─────────────────────────────────────────
+   DRAFT GENERATOR — calls /api/draft
+───────────────────────────────────────── */
+async function generateDraft() {
+  // Collect hook
+  const hookEl = document.querySelector(".hook-card.selected");
+  const hook = hookEl ? hookEl.textContent.trim() : "";
+  if (!hook) {
+    setDraftState("error", "Please select a hook first.");
+    return;
+  }
+
+  // Collect story bullets from editable textareas
+  const storyBullets = Array.from(
+    document.querySelectorAll(".story-bullet-textarea")
+  ).map(t => t.value.trim()).filter(Boolean);
+  if (storyBullets.length === 0) {
+    setDraftState("error", "Please fill in at least one story bullet.");
+    return;
+  }
+
+  // CTA
+  const ctaEl = document.querySelector(".cta-chips .chip.selected");
+  const cta = ctaEl ? ctaEl.textContent.trim() : "Follow";
+
+  // Tone from onboarding data; pillar from the navbar chip
+  const tone = (demoData.onboarding && demoData.onboarding.tone) || "Direct";
+  const pillarEl = document.querySelector("#screen-draft .navbar .chip");
+  const pillar = pillarEl ? pillarEl.textContent.trim() : "Community";
+
+  setDraftState("generating");
+
+  try {
+    const resp = await fetch("/api/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hook, storyBullets, cta, tone, pillar }),
+    });
+
+    let data;
+    try { data = await resp.json(); }
+    catch { data = { ok: false, error: "Server returned an unexpected response." }; }
+
+    if (data.ok) {
+      demoData.draft.generatedText = data.draft;
+      setDraftState("ready", data.draft);
+    } else {
+      setDraftState("error", data.error || "Something went wrong. Try again.");
+    }
+  } catch {
+    setDraftState("error", "Could not reach the server. Check your connection.");
+  }
+}
+
+function setDraftState(state, content) {
+  const generating = document.getElementById("draft-generating");
+  const placeholder = document.getElementById("draft-placeholder");
+  const output     = document.getElementById("draft-output");
+  const errorEl    = document.getElementById("draft-error");
+  const btn        = document.getElementById("btn-generate");
+
+  // Reset to neutral
+  if (generating) generating.hidden = true;
+  if (placeholder) placeholder.hidden = true;
+  if (output)      output.hidden = true;
+  if (errorEl)     errorEl.hidden = true;
+  if (btn)         btn.disabled = false;
+
+  if (state === "generating") {
+    if (generating) generating.hidden = false;
+    if (btn)        btn.disabled = true;
+  } else if (state === "ready") {
+    if (output) {
+      output.hidden = false;
+      output.value = content || "";
+      // auto-size to content
+      output.style.height = "auto";
+      output.style.height = output.scrollHeight + "px";
+    }
+  } else if (state === "error") {
+    if (placeholder) placeholder.hidden = false; // keep hint visible
+    if (errorEl) {
+      errorEl.hidden = false;
+      errorEl.textContent = content || "An error occurred.";
+    }
+  } else {
+    // "idle" — just show placeholder
+    if (placeholder) placeholder.hidden = false;
+  }
 }
 
 /* ─────────────────────────────────────────
@@ -580,6 +677,202 @@ window.handleLogout = function() {
 document.addEventListener("click", () => {
   document.querySelectorAll(".profile-menu.open").forEach(m => m.classList.remove("open"));
 });
+
+/* ─────────────────────────────────────────
+   CONNECT SCREEN — Supabase real backend
+───────────────────────────────────────── */
+const Connect = (() => {
+  let _sb = null;     // Supabase JS client
+  let _jwt = null;    // current user's access token
+  let _profile = null;
+
+  // ── State panel switcher ────────────────────────────────────────────────
+  function _show(panelId) {
+    ["connect-loading", "connect-auth", "connect-setup", "connect-main"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("active", id === panelId);
+    });
+  }
+
+  // ── API helper — authenticated fetch to Python functions ────────────────
+  async function _api(path, options = {}) {
+    const headers = { "Content-Type": "application/json" };
+    if (_jwt) headers["Authorization"] = `Bearer ${_jwt}`;
+    const res = await fetch(path, { ...options, headers: { ...headers, ...(options.headers || {}) } });
+    try { return await res.json(); } catch { return { ok: false, error: "Unexpected server response" }; }
+  }
+
+  // ── Feedback helpers ────────────────────────────────────────────────────
+  function _setFeedback(elId, msg, isErr = false) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "text-small " + (isErr ? "connect-feedback-err" : "connect-feedback-ok");
+  }
+
+  // ── Load connections and display ────────────────────────────────────────
+  async function _loadConnections() {
+    const listEl = document.getElementById("connect-connections-list");
+    if (!listEl) return;
+
+    const data = await _api("/api/connections_list");
+    if (!data.ok) {
+      listEl.innerHTML = `<p class="text-small connect-feedback-err">${data.error}</p>`;
+      return;
+    }
+    if (!data.connections.length) {
+      listEl.innerHTML = `<p class="text-small text-muted">
+        No connections yet. Share your QR code or generate a word code to connect.
+      </p>`;
+      return;
+    }
+    listEl.innerHTML = data.connections.map(c => {
+      const initials = (c.display_name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+      return `
+        <div class="connect-person-row">
+          <div class="avatar">${initials}</div>
+          <div class="connect-person-info">
+            <div class="connect-person-name">${_esc(c.display_name)}</div>
+            ${c.headline ? `<div class="connect-person-headline">${_esc(c.headline)}</div>` : ""}
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // ── Escape helper (XSS-safe) ────────────────────────────────────────────
+  function _esc(s) {
+    return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  // ── Main screen setup ───────────────────────────────────────────────────
+  function _showMain(profile) {
+    _profile = profile;
+    const av = document.getElementById("connect-avatar");
+    if (av) {
+      av.textContent = (profile.display_name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    }
+    _show("connect-main");
+    _loadConnections();
+
+    // Code submit (Phase 3 placeholder)
+    const codeBtn = document.getElementById("connect-code-submit");
+    if (codeBtn && !codeBtn._wired) {
+      codeBtn._wired = true;
+      codeBtn.addEventListener("click", () => {
+        const code = (document.getElementById("connect-code-input")?.value || "").trim().toLowerCase();
+        if (!code) return;
+        _setFeedback("connect-code-msg", "Keyword code pairing is coming in Phase 3.", false);
+      });
+    }
+
+    // Sign out
+    const soBtn = document.getElementById("connect-sign-out");
+    if (soBtn && !soBtn._wired) {
+      soBtn._wired = true;
+      soBtn.addEventListener("click", async () => {
+        await _sb.auth.signOut();
+        _jwt = null; _profile = null;
+        _show("connect-auth");
+      });
+    }
+  }
+
+  // ── PUBLIC: called when user navigates to Connect screen ────────────────
+  async function init() {
+    _show("connect-loading");
+
+    // 1. Fetch public config and init Supabase client
+    if (!_sb) {
+      try {
+        const cfg = await fetch("/api/config").then(r => r.json());
+        if (!cfg.ok) throw new Error(cfg.error || "Config fetch failed");
+        _sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+      } catch (err) {
+        _show("connect-auth");
+        _setFeedback("connect-auth-feedback", `Could not reach server: ${err.message}`, true);
+        return;
+      }
+    }
+
+    // 2. Check auth state (also handles magic-link redirect fragment)
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) {
+      _show("connect-auth");
+      _wireAuthForm();
+      return;
+    }
+    _jwt = session.access_token;
+
+    // 3. Fetch profile
+    const profileData = await _api("/api/profile");
+    if (profileData.ok) {
+      _showMain(profileData.profile);
+    } else if (profileData.error && profileData.error.includes("not found")) {
+      _show("connect-setup");
+      _wireSetupForm();
+    } else {
+      _show("connect-auth");
+      _setFeedback("connect-auth-feedback", "Session expired. Please sign in again.", true);
+      await _sb.auth.signOut();
+      _jwt = null;
+    }
+  }
+
+  // ── Wire magic-link sign-in form ────────────────────────────────────────
+  function _wireAuthForm() {
+    const btn = document.getElementById("connect-magic-link-btn");
+    if (!btn || btn._wired) return;
+    btn._wired = true;
+    btn.addEventListener("click", async () => {
+      const email = (document.getElementById("connect-email")?.value || "").trim();
+      if (!email) { _setFeedback("connect-auth-feedback", "Enter your email first.", true); return; }
+
+      btn.disabled = true;
+      _setFeedback("connect-auth-feedback", "Sending…", false);
+
+      const { error } = await _sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.href },
+      });
+
+      btn.disabled = false;
+      if (error) {
+        _setFeedback("connect-auth-feedback", error.message, true);
+      } else {
+        _setFeedback("connect-auth-feedback", "Magic link sent! Check your inbox.", false);
+      }
+    });
+  }
+
+  // ── Wire first-time profile setup form ─────────────────────────────────
+  function _wireSetupForm() {
+    const btn = document.getElementById("setup-save-btn");
+    if (!btn || btn._wired) return;
+    btn._wired = true;
+    btn.addEventListener("click", async () => {
+      const name     = (document.getElementById("setup-name")?.value     || "").trim();
+      const headline = (document.getElementById("setup-headline")?.value || "").trim();
+      if (!name) { _setFeedback("setup-feedback", "Name is required.", true); return; }
+
+      btn.disabled = true;
+      _setFeedback("setup-feedback", "Saving…", false);
+
+      const result = await _api("/api/profile", {
+        method: "POST",
+        body: JSON.stringify({ display_name: name, headline }),
+      });
+
+      btn.disabled = false;
+      if (result.ok) {
+        _showMain(result.profile);
+      } else {
+        _setFeedback("setup-feedback", result.error || "Save failed. Try again.", true);
+      }
+    });
+  }
+
+  return { init };
+})();
 
 /* ─────────────────────────────────────────
    BOOT

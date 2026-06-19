@@ -541,6 +541,32 @@ body {
 }
 
 /* ─────────────────────────────────────────
+   STRIDE INPUT — text / email fields
+───────────────────────────────────────── */
+.stride-input {
+  display: block;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--glass-surface);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-body);
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  backdrop-filter: blur(var(--glass-blur-sm));
+  transition: border-color var(--motion-base), box-shadow var(--motion-base);
+  box-sizing: border-box;
+}
+.stride-input::placeholder { color: var(--text-muted); }
+.stride-input:focus {
+  outline: none;
+  border-color: var(--color-stride-blue);
+  box-shadow: 0 0 0 3px rgba(46,127,184,0.12);
+}
+.stride-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─────────────────────────────────────────
    THEME TOGGLE — floating glass button
 ───────────────────────────────────────── */
 #theme-toggle {
