@@ -1,7 +1,7 @@
 """
 Stride — /api/health
 GET → checks that each integration can authenticate.
-Returns { gemma, nemotron, linkedin, supabase } — ok/fail per service.
+Returns { agnes, nemotron, linkedin, supabase } — ok/fail per service.
 NEVER returns secret values or key material in the response.
 """
 
@@ -11,34 +11,33 @@ import sys
 import requests
 from http.server import BaseHTTPRequestHandler
 
+_AGNES_URL            = "https://apihub.agnes-ai.com/v1/chat/completions"
+_DEFAULT_AGNES_MODEL  = "agnes-2.0-flash"
 _NIM_URL              = "https://integrate.api.nvidia.com/v1/chat/completions"
-_DEFAULT_CHAT_MODEL   = "google/gemma-4-31b-it"
 _DEFAULT_SAFETY_MODEL = "nvidia/nemotron-3-content-safety"
 
 
-def _check_gemma() -> dict:
-    api_key = os.environ.get("NVIDIA_API_CHAT_KEY")
+def _check_agnes() -> dict:
+    api_key = os.environ.get("AGNES_AI_TOKEN")
     if not api_key:
-        return {"ok": False, "error": "NVIDIA_API_CHAT_KEY not set"}
-    model = os.environ.get("NVIDIA_CHAT_MODEL", _DEFAULT_CHAT_MODEL)
+        return {"ok": False, "error": "AGNES_AI_TOKEN not set"}
+    model = os.environ.get("AGNES_MODEL", _DEFAULT_AGNES_MODEL)
     try:
         resp = requests.post(
-            _NIM_URL,
+            _AGNES_URL,
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            # Minimal ping: single-word prompt, tiny output, no thinking mode
             json={"model": model, "messages": [{"role": "user", "content": "Hi"}], "max_tokens": 5},
-            timeout=25,  # NIM can be slow on cold start; 25s is enough to detect auth vs timeout
+            timeout=15,
         )
         if resp.status_code in (200, 201):
             return {"ok": True, "model": model}
-        # Surface the actual error body so a wrong model name is diagnosable
         try:
             detail = resp.json()
         except Exception:
             detail = resp.text[:200]
         return {"ok": False, "error": f"HTTP {resp.status_code}", "detail": detail}
     except requests.exceptions.Timeout:
-        return {"ok": False, "error": "Timeout after 25s — NIM may be cold-starting, retry in 30s"}
+        return {"ok": False, "error": "Timeout after 15s"}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
 
@@ -63,18 +62,13 @@ def _check_nemotron() -> dict:
 
 
 def _check_linkedin() -> dict:
-    token   = os.environ.get("LINKEDIN_ACCESS_TOKEN")
-    version = os.environ.get("LINKEDIN_API_VERSION", "202606")
+    token = os.environ.get("LINKEDIN_ACCESS_TOKEN")
     if not token:
         return {"ok": False, "error": "LINKEDIN_ACCESS_TOKEN not set"}
     try:
         resp = requests.get(
-            "https://api.linkedin.com/rest/me",
-            headers={
-                "Authorization":             f"Bearer {token}",
-                "LinkedIn-Version":          version,
-                "X-Restli-Protocol-Version": "2.0.0",
-            },
+            "https://api.linkedin.com/v2/userinfo",
+            headers={"Authorization": f"Bearer {token}"},
             timeout=10,
         )
         if resp.status_code == 200:
@@ -109,7 +103,7 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         results = {
-            "gemma":    _check_gemma(),
+            "agnes":    _check_agnes(),
             "nemotron": _check_nemotron(),
             "linkedin": _check_linkedin(),
             "supabase": _check_supabase(),
