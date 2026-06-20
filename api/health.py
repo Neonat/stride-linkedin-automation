@@ -1,7 +1,7 @@
 """
 Stride — /api/health
 GET → checks that each integration can authenticate.
-Returns { gemma, nemotron, linkedin, supabase } — ok/fail per service.
+Returns { agnes, nemotron, linkedin, supabase } — ok/fail per service.
 NEVER returns secret values or key material in the response.
 """
 
@@ -62,18 +62,13 @@ def _check_nemotron() -> dict:
 
 
 def _check_linkedin() -> dict:
-    token   = os.environ.get("LINKEDIN_ACCESS_TOKEN")
-    version = os.environ.get("LINKEDIN_API_VERSION", "202606")
+    token = os.environ.get("LINKEDIN_ACCESS_TOKEN")
     if not token:
         return {"ok": False, "error": "LINKEDIN_ACCESS_TOKEN not set"}
     try:
         resp = requests.get(
-            "https://api.linkedin.com/rest/me",
-            headers={
-                "Authorization":             f"Bearer {token}",
-                "LinkedIn-Version":          version,
-                "X-Restli-Protocol-Version": "2.0.0",
-            },
+            "https://api.linkedin.com/v2/userinfo",
+            headers={"Authorization": f"Bearer {token}"},
             timeout=10,
         )
         if resp.status_code == 200:
