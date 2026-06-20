@@ -126,6 +126,7 @@ function showScreen(id) {
   document.body.classList.toggle("on-landing", id === "landing");
   if (id === "home") {
     renderHomePillars();
+    renderHomePersonaCard(window.personaData, null);
   }
 
   // Handle global navbar visibility and active tabs
@@ -146,35 +147,38 @@ function showScreen(id) {
 }
 
 /* ─────────────────────────────────────────
-   ONBOARDING — 5 steps + profile payoff
+   ONBOARDING — 5 steps + paste power-up + profile payoff
 ───────────────────────────────────────── */
 let currentStep = 1;
 const TOTAL_STEPS = 5;
 const SINGLE_SELECT_STEPS = new Set([1, 2, 4]); // role, field, tone — auto-advance
+
+// Holds the last persona returned from /api/persona so the home screen can display it
+window.personaData = null;
 
 function goToStep(n) {
   document.querySelectorAll(".onboarding-step").forEach(s => s.classList.remove("active"));
   document.querySelectorAll(".step-dot").forEach((d, i) => {
     d.classList.toggle("active", i + 1 === n);
   });
-  
+
   const stepLabel = document.getElementById("onboarding-step-label");
   if (stepLabel && n <= TOTAL_STEPS) {
     stepLabel.textContent = `Step ${n} of 5`;
   }
-  
+
   const header = document.querySelector(".onboarding-header");
   if (header && n <= TOTAL_STEPS) {
     header.style.display = "flex";
   }
-  
+
   const backBtn = document.getElementById("btn-onboarding-back");
   if (backBtn) {
     backBtn.style.visibility = n > 1 && n <= TOTAL_STEPS ? "visible" : "hidden";
   }
 
   if (n > TOTAL_STEPS) {
-    showProfileCard();
+    showPasteStep();
     return;
   }
   const step = document.getElementById("onboarding-step-" + n);
@@ -186,56 +190,213 @@ function nextStep() {
   goToStep(currentStep + 1);
 }
 
-function showProfileCard() {
+// Show the paste power-up step (after step 5, before profile payoff)
+function showPasteStep() {
   document.querySelectorAll(".onboarding-step").forEach(s => s.classList.remove("active"));
   document.querySelectorAll(".step-dot").forEach(d => d.classList.remove("active"));
-  
+
   const header = document.querySelector(".onboarding-header");
   if (header) header.style.display = "none";
-  
+
+  const pasteStep = document.getElementById("onboarding-paste");
+  if (pasteStep) pasteStep.classList.add("active");
+}
+
+// Collect current onboarding selections
+function _collectOnboardingAnswers() {
+  const getSelection = (stepId) => {
+    const step = document.getElementById(stepId);
+    if (!step) return [];
+    return Array.from(step.querySelectorAll(".chip.selected")).map(c => c.textContent.trim());
+  };
+  return {
+    role:    getSelection("onboarding-step-1")[0] || "",
+    field:   getSelection("onboarding-step-2")[0] || "",
+    wants:   getSelection("onboarding-step-3"),
+    tone:    getSelection("onboarding-step-4")[0] || "",
+    pillars: getSelection("onboarding-step-5"),
+  };
+}
+
+// Auto-fill a single-select step with a value (animates the selection)
+function _autofillSingleSelect(stepId, value) {
+  const step = document.getElementById(stepId);
+  if (!step || !value) return;
+  const chips = step.querySelectorAll(".chip");
+  chips.forEach(c => c.classList.remove("selected", "chip-autofilled"));
+  const match = Array.from(chips).find(
+    c => c.textContent.trim().toLowerCase() === value.toLowerCase()
+  );
+  if (match) {
+    match.classList.add("selected", "chip-autofilled");
+    setTimeout(() => match.classList.remove("chip-autofilled"), 700);
+  } else if (chips.length > 0) {
+    // Pick first chip if no match (fallback)
+    chips[0].classList.add("selected");
+  }
+}
+
+// Auto-fill a multi-select step with an array of values
+function _autofillMultiSelect(stepId, values) {
+  const step = document.getElementById(stepId);
+  if (!step || !values || !values.length) return;
+  const norm = values.map(v => v.toLowerCase());
+  step.querySelectorAll(".chip").forEach(c => {
+    const matches = norm.includes(c.textContent.trim().toLowerCase());
+    c.classList.toggle("selected", matches);
+    if (matches) {
+      c.classList.add("chip-autofilled");
+      setTimeout(() => c.classList.remove("chip-autofilled"), 700);
+    }
+  });
+}
+
+// Apply persona data to the onboarding steps (auto-fill animation)
+async function _applyPersonaAutofill(data) {
+  const role    = (data.roles    || [])[0] || "";
+  const field   = (data.fields   || [])[0] || "";
+  const pillars = data.suggested_pillars || [];
+  const tone    = data.tone || "";
+
+  // Stagger the autofill so the user can see it happening step-by-step
+  _autofillSingleSelect("onboarding-step-1", role);
+  await _sleep(180);
+  _autofillSingleSelect("onboarding-step-2", field);
+  await _sleep(180);
+  _autofillSingleSelect("onboarding-step-4", tone);
+  await _sleep(180);
+  _autofillMultiSelect("onboarding-step-5", pillars);
+}
+
+function _sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+// Show the profile payoff card (after steps or after paste)
+function showProfileCard(fromPersonaData) {
+  document.querySelectorAll(".onboarding-step").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".step-dot").forEach(d => d.classList.remove("active"));
+
+  const header = document.querySelector(".onboarding-header");
+  if (header) header.style.display = "none";
+
   const profile = document.getElementById("onboarding-profile");
-  if (profile) {
-    profile.classList.add("active");
-    
-    const getSelection = (stepId) => {
-      const step = document.getElementById(stepId);
-      if (!step) return [];
-      return Array.from(step.querySelectorAll(".chip.selected")).map(c => c.textContent.trim());
-    };
-    
-    const role = getSelection("onboarding-step-1")[0] || "Professional";
-    const field = getSelection("onboarding-step-2")[0] || "Tech";
-    const goals = getSelection("onboarding-step-3");
-    const tone = getSelection("onboarding-step-4")[0] || "Professional";
-    const pillars = getSelection("onboarding-step-5");
-    window.userSelectedPillars = pillars.length > 0 ? pillars : demoData.user.pillars;
-    
-    const personaEl = profile.querySelector(".profile-persona");
-    if (personaEl) {
-      personaEl.textContent = `${role} building in ${field}`;
-    }
-    
-    const posEl = profile.querySelector(".profile-positioning");
-    if (posEl) {
-      let goalText = goals.length > 0 ? ` to attract ${goals.join(' and ')}` : "";
-      posEl.textContent = `I share my journey in ${field}${goalText} — keeping it ${tone.toLowerCase()} and authentic.`;
-    }
-    
-    const metaEl = profile.querySelector(".profile-meta");
-    if (metaEl) {
-      metaEl.innerHTML = "";
-      pillars.forEach(p => {
-        const span = document.createElement("span");
-        span.className = `chip chip-${p.toLowerCase()} selected`;
-        span.style = "font-size:11px;padding:2px 10px;pointer-events:none;";
-        span.textContent = p;
-        metaEl.appendChild(span);
-      });
-      const toneSpan = document.createElement("span");
-      toneSpan.className = "profile-tone-label";
-      toneSpan.textContent = tone;
-      metaEl.appendChild(toneSpan);
-    }
+  if (!profile) return;
+  profile.classList.add("active");
+
+  const answers = _collectOnboardingAnswers();
+  const pillars = answers.pillars.length > 0 ? answers.pillars : demoData.user.pillars;
+  window.userSelectedPillars = pillars;
+
+  let persona, positioning, tone;
+
+  const autofillNote = document.getElementById("profile-autofill-note");
+  if (fromPersonaData) {
+    // Persona came from the API — use it directly
+    persona      = fromPersonaData.persona_summary || "";
+    positioning  = fromPersonaData.positioning     || "";
+    tone         = fromPersonaData.tone            || answers.tone || "Direct";
+    window.personaData = fromPersonaData;
+    if (autofillNote) autofillNote.style.display = "flex";
+  } else {
+    // Build a local fallback from onboarding selections
+    const role  = answers.role  || "Professional";
+    const field = answers.field || "Tech";
+    const goals = answers.wants;
+    tone        = answers.tone  || "Direct";
+    persona     = `${role} building in ${field}`;
+    const goalText = goals.length > 0 ? ` to attract ${goals.join(" and ")}` : "";
+    positioning = `I share my journey in ${field}${goalText} — keeping it ${tone.toLowerCase()} and authentic.`;
+    if (autofillNote) autofillNote.style.display = "none";
+  }
+
+  const personaEl = profile.querySelector(".profile-persona");
+  if (personaEl) personaEl.textContent = persona;
+
+  const posEl = profile.querySelector(".profile-positioning");
+  if (posEl) posEl.textContent = positioning;
+
+  const metaEl = profile.querySelector(".profile-meta");
+  if (metaEl) {
+    metaEl.innerHTML = "";
+    pillars.forEach(p => {
+      const span = document.createElement("span");
+      span.className = `chip chip-${p.toLowerCase()} selected`;
+      span.style = "font-size:11px;padding:2px 10px;pointer-events:none;";
+      span.textContent = p;
+      metaEl.appendChild(span);
+    });
+    const toneSpan = document.createElement("span");
+    toneSpan.className = "profile-tone-label";
+    toneSpan.textContent = tone;
+    metaEl.appendChild(toneSpan);
+  }
+}
+
+// Wire up the paste power-up step
+function initPasteStep() {
+  const submitBtn = document.getElementById("btn-paste-submit");
+  const skipBtn   = document.getElementById("btn-paste-skip");
+  const loading   = document.getElementById("paste-loading");
+  const errorEl   = document.getElementById("paste-error");
+  const textarea  = document.getElementById("onboarding-paste-input");
+
+  if (skipBtn) {
+    skipBtn.addEventListener("click", () => showProfileCard(null));
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", async () => {
+      const pasted = (textarea ? textarea.value : "").trim();
+      const answers = _collectOnboardingAnswers();
+
+      // Show loading
+      if (loading) loading.hidden = false;
+      if (errorEl) errorEl.hidden = true;
+      submitBtn.disabled = true;
+      if (skipBtn)   skipBtn.disabled = true;
+
+      try {
+        const resp = await fetch("/api/persona", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pastedText: pasted,
+            role:    answers.role,
+            field:   answers.field,
+            wants:   answers.wants,
+            tone:    answers.tone,
+            pillars: answers.pillars,
+          }),
+        });
+        let data;
+        try { data = await resp.json(); }
+        catch { data = { ok: false, error: "Unexpected server response." }; }
+
+        if (!data.ok) {
+          if (errorEl) {
+            errorEl.textContent = data.error || "Something went wrong. Try again.";
+            errorEl.hidden = false;
+          }
+          return;
+        }
+
+        // Auto-fill the onboarding chips with a staggered animation
+        await _applyPersonaAutofill(data);
+        // Then reveal the profile card with the API data
+        showProfileCard(data);
+
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = "Could not reach the server. Check your connection.";
+          errorEl.hidden = false;
+        }
+      } finally {
+        if (loading) loading.hidden = true;
+        submitBtn.disabled = false;
+        if (skipBtn) skipBtn.disabled = false;
+      }
+    });
   }
 }
 
@@ -247,7 +408,6 @@ function renderHomePillars() {
   pillarContainer.innerHTML = "";
 
   userPillars.forEach(pillarName => {
-    // Generate some mock stats or get from demoData
     let data = demoData.pillarCoverage.find(p => p.name === pillarName);
     if (!data) {
       data = { name: pillarName, pct: Math.floor(Math.random() * 40) + 20, gap: false };
@@ -274,6 +434,55 @@ function renderHomePillars() {
     `;
     pillarContainer.insertAdjacentHTML('beforeend', html);
   });
+}
+
+// Render the living persona card on the home screen
+function renderHomePersonaCard(data, whatChanged) {
+  const card = document.getElementById("home-persona-card");
+  if (!card) return;
+
+  if (!data) { card.style.display = "none"; return; }
+
+  const summaryEl    = document.getElementById("home-persona-summary");
+  const posEl        = document.getElementById("home-persona-positioning");
+  const metaEl       = document.getElementById("home-persona-meta");
+  const changedEl    = document.getElementById("home-persona-changed");
+  const changedText  = document.getElementById("home-persona-changed-text");
+  const updatedBadge = document.getElementById("home-persona-updated");
+
+  if (summaryEl)   summaryEl.textContent   = data.persona_summary  || "";
+  if (posEl)       posEl.textContent       = data.positioning       || "";
+
+  if (metaEl) {
+    metaEl.innerHTML = "";
+    const pillars = Array.isArray(data.suggested_pillars) ? data.suggested_pillars : (data.pillars || []);
+    pillars.forEach(p => {
+      const span = document.createElement("span");
+      span.className = `chip chip-${p.toLowerCase()} selected`;
+      span.style = "font-size:11px;padding:2px 10px;pointer-events:none;";
+      span.textContent = p;
+      metaEl.appendChild(span);
+    });
+    if (data.tone) {
+      const toneSpan = document.createElement("span");
+      toneSpan.className = "profile-tone-label";
+      toneSpan.textContent = data.tone;
+      metaEl.appendChild(toneSpan);
+    }
+  }
+
+  if (whatChanged && changedEl && changedText) {
+    changedText.textContent = whatChanged;
+    changedEl.style.display = "flex";
+    if (updatedBadge) updatedBadge.style.display = "inline-flex";
+    // Auto-hide the "what changed" note after 8 seconds
+    setTimeout(() => {
+      changedEl.style.display = "none";
+      if (updatedBadge) updatedBadge.style.display = "none";
+    }, 8000);
+  }
+
+  card.style.display = "";
 }
 
 function updateContinueBtn(stepEl) {
@@ -320,6 +529,8 @@ function initOnboarding() {
       if (currentStep > 1) goToStep(currentStep - 1);
     });
   }
+
+  initPasteStep();
 }
 
 /* Personality slider gradient update */
@@ -937,6 +1148,203 @@ const Connect = (() => {
 })();
 
 /* ─────────────────────────────────────────
+   MOMENT CAPTURE MODAL
+───────────────────────────────────────── */
+function openMomentModal() {
+  const overlay = document.getElementById("moment-modal-overlay");
+  if (!overlay) return;
+  // Set today's date as default
+  const dateInput = document.getElementById("moment-date");
+  if (dateInput && !dateInput.value) {
+    dateInput.value = new Date().toISOString().split("T")[0];
+  }
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+  // Focus title
+  setTimeout(() => {
+    const t = document.getElementById("moment-title");
+    if (t) t.focus();
+  }, 80);
+}
+
+function closeMomentModal() {
+  const overlay = document.getElementById("moment-modal-overlay");
+  if (overlay) overlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+function initMomentModal() {
+  // Open button (on home screen)
+  const openBtn = document.getElementById("btn-capture-moment");
+  if (openBtn) openBtn.addEventListener("click", openMomentModal);
+
+  // Close button inside modal
+  const closeBtn = document.getElementById("btn-moment-close");
+  if (closeBtn) closeBtn.addEventListener("click", closeMomentModal);
+
+  // Close on overlay click (outside modal card)
+  const overlay = document.getElementById("moment-modal-overlay");
+  if (overlay) {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeMomentModal();
+    });
+  }
+
+  // Kind chip selection (single-select)
+  document.querySelectorAll(".moment-kind-chips .chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".moment-kind-chips .chip").forEach(c => c.classList.remove("selected"));
+      chip.classList.add("selected");
+    });
+  });
+
+  // Pillar chip selection (single-select)
+  document.querySelectorAll(".moment-pillar-chips .chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".moment-pillar-chips .chip").forEach(c => c.classList.remove("selected"));
+      chip.classList.add("selected");
+    });
+  });
+
+  // Add bullet button
+  const addBulletBtn = document.getElementById("btn-add-bullet");
+  if (addBulletBtn) {
+    addBulletBtn.addEventListener("click", () => {
+      const wrap = document.getElementById("moment-bullets-wrap");
+      if (!wrap) return;
+      const row = document.createElement("div");
+      row.className = "moment-bullet-row";
+      row.innerHTML = `
+        <span class="story-bullet-dot" style="margin-top:10px;"></span>
+        <textarea class="stride-input moment-bullet-input" rows="1" placeholder="Add another detail…"></textarea>
+      `;
+      wrap.appendChild(row);
+      const ta = row.querySelector("textarea");
+      if (ta) {
+        ta.focus();
+        ta.addEventListener("input", _autoResizeTextarea);
+      }
+    });
+  }
+
+  // Auto-resize existing bullet textareas
+  document.querySelectorAll(".moment-bullet-input").forEach(ta => {
+    ta.addEventListener("input", _autoResizeTextarea);
+  });
+
+  // Save button
+  const saveBtn = document.getElementById("btn-moment-save");
+  if (saveBtn) saveBtn.addEventListener("click", _handleMomentSave);
+}
+
+function _autoResizeTextarea() {
+  this.style.height = "auto";
+  this.style.height = this.scrollHeight + "px";
+}
+
+async function _handleMomentSave() {
+  const titleEl   = document.getElementById("moment-title");
+  const dateEl    = document.getElementById("moment-date");
+  const errorEl   = document.getElementById("moment-error");
+  const savingEl  = document.getElementById("moment-saving");
+  const saveBtn   = document.getElementById("btn-moment-save");
+
+  const title = (titleEl ? titleEl.value : "").trim();
+  if (!title) {
+    if (errorEl) { errorEl.textContent = "Give this moment a title."; errorEl.hidden = false; }
+    if (titleEl) titleEl.focus();
+    return;
+  }
+
+  const kindEl    = document.querySelector(".moment-kind-chips .chip.selected");
+  const pillarEl  = document.querySelector(".moment-pillar-chips .chip.selected");
+  const kind      = kindEl   ? kindEl.dataset.kind    : "experience";
+  const pillar    = pillarEl ? pillarEl.dataset.pillar : "";
+
+  if (!pillar) {
+    if (errorEl) { errorEl.textContent = "Choose a pillar for this moment."; errorEl.hidden = false; }
+    return;
+  }
+
+  const bullets = Array.from(document.querySelectorAll(".moment-bullet-input"))
+    .map(t => t.value.trim())
+    .filter(Boolean);
+
+  const happenedOn = dateEl ? dateEl.value : new Date().toISOString().split("T")[0];
+
+  if (errorEl) errorEl.hidden = true;
+  if (savingEl) savingEl.hidden = false;
+  if (saveBtn) saveBtn.disabled = true;
+
+  try {
+    const resp = await fetch("/api/moments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, kind, pillar, bullets, happenedOn }),
+    });
+    let data;
+    try { data = await resp.json(); }
+    catch { data = { ok: false, error: "Unexpected server response." }; }
+
+    if (!data.ok) {
+      if (errorEl) { errorEl.textContent = data.error || "Save failed. Try again."; errorEl.hidden = false; }
+      return;
+    }
+
+    // Persona refresh happened server-side; update the card if data returned
+    if (data.persona) {
+      window.personaData = data.persona;
+      renderHomePersonaCard(data.persona, data.whatChanged || "");
+    }
+
+    closeMomentModal();
+    _resetMomentModal();
+
+  } catch (err) {
+    if (errorEl) { errorEl.textContent = "Could not reach the server."; errorEl.hidden = false; }
+  } finally {
+    if (savingEl) savingEl.hidden = true;
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
+function _resetMomentModal() {
+  const titleEl = document.getElementById("moment-title");
+  if (titleEl) titleEl.value = "";
+
+  // Reset kind to first option
+  const kindChips = document.querySelectorAll(".moment-kind-chips .chip");
+  kindChips.forEach((c, i) => c.classList.toggle("selected", i === 0));
+
+  // Clear pillar selection
+  document.querySelectorAll(".moment-pillar-chips .chip").forEach(c => c.classList.remove("selected"));
+
+  // Reset bullets to 2 rows
+  const wrap = document.getElementById("moment-bullets-wrap");
+  if (wrap) {
+    wrap.innerHTML = `
+      <div class="moment-bullet-row">
+        <span class="story-bullet-dot" style="margin-top:10px;"></span>
+        <textarea class="stride-input moment-bullet-input" rows="1" placeholder="What happened?"></textarea>
+      </div>
+      <div class="moment-bullet-row">
+        <span class="story-bullet-dot" style="margin-top:10px;"></span>
+        <textarea class="stride-input moment-bullet-input" rows="1" placeholder="What did you build or do?"></textarea>
+      </div>`;
+    wrap.querySelectorAll(".moment-bullet-input").forEach(ta => {
+      ta.addEventListener("input", _autoResizeTextarea);
+    });
+  }
+
+  const errorEl = document.getElementById("moment-error");
+  if (errorEl) errorEl.hidden = true;
+
+  const dateInput = document.getElementById("moment-date");
+  if (dateInput) dateInput.value = new Date().toISOString().split("T")[0];
+}
+
+
+/* ─────────────────────────────────────────
    BOOT
 ───────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
@@ -946,6 +1354,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initDraftEditor();
   initDevMenu();
   initThemeToggle();
+  initMomentModal();
   wireButtons();
   showScreen("landing");
 });

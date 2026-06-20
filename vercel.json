@@ -1,6 +1,8 @@
 {
   "functions": {
     "api/draft.py":        { "maxDuration": 60 },
+    "api/persona.py":      { "maxDuration": 60 },
+    "api/moments.py":      { "maxDuration": 60 },
     "api/profile.py":      { "maxDuration": 60 },
     "api/safety_check.py": { "maxDuration": 30 },
     "api/publish.py":      { "maxDuration": 30 },
