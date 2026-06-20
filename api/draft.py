@@ -1,19 +1,19 @@
 """
 Stride — /api/draft
-Calls the NVIDIA NIM API to generate a LinkedIn post draft.
+Generates a LinkedIn post draft using NVIDIA NIM (Gemma instruct model).
 
-Model: configurable via NVIDIA_MODEL env var.
-  Default: nvidia/llama-3.1-nemotron-70b-instruct (generative instruction model).
-  The "nemotron-3-content-safety" model is a safety *classifier*, not a generator;
-  use a nemotron or llama instruct model here instead.
-
-Required env var: NVIDIA_API_KEY
-Optional env var: NVIDIA_MODEL
+Required env vars:
+  NVIDIA_API_CHAT_KEY   — Bearer key for the chat/instruct model
+  NVIDIA_CHAT_MODEL     — model name, default "google/gemma-4-31b-it"
 """
 
 import json
 import os
+import requests
 from http.server import BaseHTTPRequestHandler
+
+_NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+_DEFAULT_MODEL = "google/gemma-4-31b-it"
 
 SYSTEM_PROMPT = """\
 You write LinkedIn posts for early-career professionals. Follow every rule below exactly.
@@ -34,6 +34,23 @@ VOICE & STYLE:
 - Under 280 words total.
 - Output only the post text. No preamble, no quotes around the output, no extra commentary.\
 """
+
+
+def _nim_chat(api_key: str, model: str, messages: list, temperature: float = 0.7, max_tokens: int = 700) -> str:
+    resp = requests.post(
+        _NIM_URL,
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            # do NOT pass chat_template_kwargs / enable_thinking — Gemma-3 doesn't support it
+        },
+        timeout=55,  # function maxDuration is 60s; leave 5s headroom
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"].strip()
 
 
 class handler(BaseHTTPRequestHandler):
@@ -63,11 +80,11 @@ class handler(BaseHTTPRequestHandler):
         if not story_bullets:
             return self._json(400, {"ok": False, "error": "storyBullets must have at least one item"})
 
-        api_key = os.environ.get("NVIDIA_API_KEY")
+        api_key = os.environ.get("NVIDIA_API_CHAT_KEY")
         if not api_key:
-            return self._json(500, {"ok": False, "error": "NVIDIA_API_KEY is not configured on the server"})
+            return self._json(500, {"ok": False, "error": "NVIDIA_API_CHAT_KEY is not configured"})
 
-        model = os.environ.get("NVIDIA_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct")
+        model = os.environ.get("NVIDIA_CHAT_MODEL", _DEFAULT_MODEL)
 
         bullets_fmt = "\n".join(f"- {b}" for b in story_bullets)
         system = SYSTEM_PROMPT.replace("{pillar}", pillar).replace("{tone}", tone)
@@ -81,28 +98,17 @@ class handler(BaseHTTPRequestHandler):
         )
 
         try:
-            from openai import OpenAI  # imported here so cold-start is fast if key is missing
-            client = OpenAI(
-                base_url="https://integrate.api.nvidia.com/v1",
-                api_key=api_key,
-            )
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user",   "content": user_msg},
-                ],
-                temperature=0.7,
-                max_tokens=600,
-            )
-            draft = response.choices[0].message.content.strip()
+            draft = _nim_chat(api_key, model, [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user_msg},
+            ])
             return self._json(200, {"ok": True, "draft": draft})
-
+        except requests.HTTPError as exc:
+            code = exc.response.status_code if exc.response is not None else 0
+            detail = exc.response.text[:200] if exc.response is not None else str(exc)
+            return self._json(502, {"ok": False, "error": f"NVIDIA API {code}: {detail}"})
         except Exception as exc:
-            # Surface the raw error so it's diagnosable during development.
             return self._json(500, {"ok": False, "error": str(exc)})
-
-    # ── helpers ──────────────────────────────────────────────────────────
 
     def _send_cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -119,4 +125,4 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def log_message(self, *_):
-        pass  # silence default access log
+        pass
