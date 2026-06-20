@@ -597,6 +597,111 @@ body {
 :root[data-theme="dark"] .icon-moon { display: inline-flex; }
 
 /* ─────────────────────────────────────────
+   PERSONA LEARNING NOTE
+   Shown under profile card when Stride updates the persona
+───────────────────────────────────────── */
+.persona-learning-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background: rgba(46,127,184,0.08);
+  border: 1px solid rgba(46,127,184,0.22);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: 13px;
+  color: var(--color-deep-blue);
+  line-height: 1.5;
+}
+.persona-learning-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-stride-blue);
+}
+.persona-learning-icon svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Autofill chip animation — chips glow briefly when auto-selected */
+@keyframes chipAutofill {
+  0%   { box-shadow: 0 0 0 0 rgba(46,127,184,0);  transform: scale(1); }
+  40%  { box-shadow: 0 0 0 6px rgba(46,127,184,0.20); transform: scale(1.06); }
+  100% { box-shadow: 0 0 0 0 rgba(46,127,184,0);  transform: scale(1); }
+}
+.chip-autofilled {
+  animation: chipAutofill 0.6s ease-out forwards;
+}
+
+/* ─────────────────────────────────────────
+   MOMENT MODAL OVERLAY
+───────────────────────────────────────── */
+.moment-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(15, 20, 28, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+.moment-modal-overlay[hidden] { display: none; }
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.moment-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: var(--space-6);
+}
+
+@media (min-width: 600px) {
+  .moment-modal-overlay {
+    align-items: center;
+    padding: var(--space-6);
+  }
+  .moment-modal {
+    border-radius: var(--radius-xl);
+    max-height: 85vh;
+  }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.moment-bullet-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.moment-bullet-row .moment-bullet-input {
+  flex: 1;
+  resize: none;
+  overflow: hidden;
+  min-height: 40px;
+  font-size: 14px;
+}
+
+/* ─────────────────────────────────────────
    TOOLTIPS — for floating corner buttons
 ───────────────────────────────────────── */
 .has-tooltip { position: relative; }

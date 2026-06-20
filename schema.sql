@@ -91,6 +91,36 @@ CREATE TABLE IF NOT EXISTS public.rate_limit_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_rla_key_time ON public.rate_limit_attempts(key, attempted_at);
 
+-- 10. PERSONAS — one living row per user; grows from paste + moments
+--     user_id is not a FK so demo/anonymous sessions can write without
+--     a corresponding auth.users entry.
+CREATE TABLE IF NOT EXISTS public.personas (
+    user_id         TEXT        PRIMARY KEY,
+    roles           JSONB       NOT NULL DEFAULT '[]',
+    fields          JSONB       NOT NULL DEFAULT '[]',
+    pillars         JSONB       NOT NULL DEFAULT '[]',
+    tone            TEXT        NOT NULL DEFAULT '',
+    persona_summary TEXT        NOT NULL DEFAULT '',
+    positioning     TEXT        NOT NULL DEFAULT '',
+    evidence        JSONB       NOT NULL DEFAULT '[]',
+    raw_inputs      TEXT        NOT NULL DEFAULT '',
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 11. MOMENTS — each moment is persona data AND future post material
+CREATE TABLE IF NOT EXISTS public.moments (
+    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     TEXT        NOT NULL,
+    title       TEXT        NOT NULL,
+    kind        TEXT        NOT NULL DEFAULT 'experience',
+    happened_on DATE        NOT NULL DEFAULT CURRENT_DATE,
+    bullets     JSONB       NOT NULL DEFAULT '[]',
+    pillar      TEXT        NOT NULL DEFAULT '',
+    photo_ref   TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_moments_user ON public.moments(user_id, created_at DESC);
+
 -- ──────────────────────────────────────────────────────────────────────────────
 -- CLEANUP FUNCTION — call periodically to purge expired tokens/codes and
 -- rate-limit attempts older than 1 hour. Run manually or via pg_cron.

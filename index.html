@@ -309,6 +309,43 @@ Stride helps you share it.</h1>
       <button class="btn btn-primary" data-next-step>Continue</button>
     </div>
 
+    <!-- Paste power-up (optional, between step 5 and profile payoff) -->
+    <div class="onboarding-step" id="onboarding-paste">
+      <div class="paste-powerup-header">
+        <span class="paste-powerup-badge">Power-up</span>
+        <p class="onboarding-question" style="margin-bottom:var(--space-2);">Paste anything that's you.</p>
+        <p class="text-small text-muted" style="margin-bottom:var(--space-5);">Your résumé, LinkedIn about section, bio — Stride reads it and fills in your profile. Totally optional.</p>
+      </div>
+      <div class="paste-journal-wrap">
+        <textarea
+          id="onboarding-paste-input"
+          class="paste-journal-textarea"
+          rows="8"
+          placeholder="Paste your résumé, LinkedIn summary, or anything that captures who you are professionally…"
+        ></textarea>
+        <div id="paste-char-hint" class="paste-char-hint">Paste as much or as little as you like.</div>
+      </div>
+
+      <!-- Loading state -->
+      <div id="paste-loading" class="ai-pulse-wrap" style="margin:var(--space-4) 0;" hidden>
+        <div class="ai-pulse-text">
+          Reading your story
+          <span class="ai-pulse-dots"><span></span><span></span><span></span></span>
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div id="paste-error" class="draft-error-msg" style="margin-bottom:var(--space-4);" hidden></div>
+
+      <div style="display:flex; flex-direction:column; gap:var(--space-3); margin-top:var(--space-4);">
+        <button class="btn btn-primary" id="btn-paste-submit">
+          <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+          Let Stride fill this in
+        </button>
+        <button class="btn btn-ghost" id="btn-paste-skip">Skip — I'll fill it in myself</button>
+      </div>
+    </div>
+
     <!-- Profile payoff -->
     <div class="onboarding-step" id="onboarding-profile">
       <div style="text-align:center;margin-bottom:var(--space-6);">
@@ -327,6 +364,13 @@ Stride helps you share it.</h1>
           <span class="chip chip-community" style="font-size:11px;padding:2px 10px;">Community</span>
           <span class="profile-tone-label">Direct</span>
         </div>
+      </div>
+      <!-- Autofill note (shown only when paste was used) -->
+      <div id="profile-autofill-note" class="persona-learning-note" style="display:none; margin-bottom:var(--space-4);">
+        <span class="persona-learning-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </span>
+        <span id="profile-autofill-note-text">Stride filled this in from your material. Everything's editable.</span>
       </div>
       <button class="btn btn-primary" data-goto="home">Enter Stride</button>
     </div>
@@ -400,6 +444,24 @@ Stride helps you share it.</h1>
           </div>
         </div>
 
+        <!-- Persona card (living model) -->
+        <div class="card animate-fade-up delay-2" id="home-persona-card" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--space-3);">
+            <p class="section-label" style="margin:0;">Your Stride persona</p>
+            <span class="badge badge-success" id="home-persona-updated" style="display:none; font-size:11px;">Updated</span>
+          </div>
+          <div id="home-persona-summary" class="profile-persona" style="margin-bottom:var(--space-2); font-size:15px;"></div>
+          <div id="home-persona-positioning" class="profile-positioning" style="font-size:13px; margin-bottom:var(--space-3);"></div>
+          <!-- "what changed" note after moment refresh -->
+          <div id="home-persona-changed" class="persona-learning-note" style="display:none; margin-bottom:var(--space-3);">
+            <span class="persona-learning-icon">
+              <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </span>
+            <span id="home-persona-changed-text"></span>
+          </div>
+          <div id="home-persona-meta" class="profile-meta"></div>
+        </div>
+
         <!-- Past Posts & Activity (No longer nested) -->
         <div class="card animate-fade-up delay-2">
           <p class="section-label">Past Posts & Activity</p>
@@ -423,6 +485,16 @@ Stride helps you share it.</h1>
           </div>
           <p class="text-small text-secondary" style="margin-bottom:var(--space-4);">You attended this event. Stride drafted a post ready to review.</p>
           <button class="btn btn-primary" data-goto="draft">Draft a post</button>
+        </div>
+
+        <!-- Capture a moment -->
+        <div class="card">
+          <p class="section-label">Grow your persona</p>
+          <p class="text-small text-secondary" style="margin-bottom:var(--space-4);">Log what happened. Stride learns from every moment you capture.</p>
+          <button class="btn btn-primary" id="btn-capture-moment">
+            <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+            Capture a moment
+          </button>
         </div>
 
         <!-- Demo Actions -->
@@ -1226,6 +1298,78 @@ Stride helps you share it.</h1>
   </div>
 
 </section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     MOMENT CAPTURE MODAL
+════════════════════════════════════════════════════ -->
+<div id="moment-modal-overlay" class="moment-modal-overlay" hidden>
+  <div class="moment-modal card" role="dialog" aria-modal="true" aria-labelledby="moment-modal-title">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5);">
+      <p class="text-h2" id="moment-modal-title" style="margin:0;">Capture a moment</p>
+      <button id="btn-moment-close" class="btn btn-ghost btn-inline" style="width:auto; padding:var(--space-2); min-height:auto;">
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
+      </button>
+    </div>
+
+    <!-- Title -->
+    <label class="text-label text-secondary">What happened?</label>
+    <input type="text" id="moment-title" class="stride-input" placeholder="Won 2nd place at SUS Hackathon" style="margin-top:var(--space-1); margin-bottom:var(--space-4);" />
+
+    <!-- Kind -->
+    <label class="text-label text-secondary" style="display:block; margin-bottom:var(--space-2);">Type</label>
+    <div class="moment-kind-chips" style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
+      <span class="chip chip-technical selected" data-kind="experience">Experience</span>
+      <span class="chip chip-leadership" data-kind="win">Win</span>
+      <span class="chip chip-community" data-kind="lesson">Lesson</span>
+      <span class="chip chip-creative" data-kind="project">Project</span>
+      <span class="chip chip-research" data-kind="talk">Talk / Event</span>
+    </div>
+
+    <!-- Pillar -->
+    <label class="text-label text-secondary" style="display:block; margin-bottom:var(--space-2);">Pillar</label>
+    <div class="moment-pillar-chips" style="display:flex; flex-wrap:wrap; gap:var(--space-2); margin-bottom:var(--space-4);">
+      <span class="chip chip-technical" data-pillar="Technical">Technical</span>
+      <span class="chip chip-leadership" data-pillar="Leadership">Leadership</span>
+      <span class="chip chip-community" data-pillar="Community">Community</span>
+      <span class="chip chip-creative" data-pillar="Creative">Creative</span>
+      <span class="chip chip-research" data-pillar="Research">Research</span>
+    </div>
+
+    <!-- Bullets -->
+    <label class="text-label text-secondary" style="display:block; margin-bottom:var(--space-2);">Key details <span class="text-muted" style="font-weight:400;">(one per line)</span></label>
+    <div id="moment-bullets-wrap" style="display:flex; flex-direction:column; gap:var(--space-2); margin-bottom:var(--space-2);">
+      <div class="moment-bullet-row">
+        <span class="story-bullet-dot" style="margin-top:10px;"></span>
+        <textarea class="stride-input moment-bullet-input" rows="1" placeholder="Built a dashboard that flagged food surplus in real time"></textarea>
+      </div>
+      <div class="moment-bullet-row">
+        <span class="story-bullet-dot" style="margin-top:10px;"></span>
+        <textarea class="stride-input moment-bullet-input" rows="1" placeholder="Reduced waste by 30% across 47 community kitchens"></textarea>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-inline" id="btn-add-bullet" style="width:auto; font-size:13px; margin-bottom:var(--space-5);">
+      <span class="icon"><svg width="12" height="12" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+      Add detail
+    </button>
+
+    <!-- Date -->
+    <label class="text-label text-secondary" style="display:block; margin-bottom:var(--space-1);">When did this happen?</label>
+    <input type="date" id="moment-date" class="stride-input" style="margin-bottom:var(--space-5);" />
+
+    <!-- Error / loading -->
+    <div id="moment-error" class="draft-error-msg" style="margin-bottom:var(--space-3);" hidden></div>
+    <div id="moment-saving" class="ai-pulse-wrap" style="margin-bottom:var(--space-3);" hidden>
+      <div class="ai-pulse-text">Saving and updating your persona<span class="ai-pulse-dots"><span></span><span></span><span></span></span></div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-moment-save">Save moment</button>
+
+    <!-- Tip: moments can become drafts -->
+    <p class="text-caption text-muted" style="text-align:center; margin-top:var(--space-3);">Saved moments can be turned into posts from the Draft screen.</p>
+  </div>
+</div>
 
 
 <!-- ═══════════════════════════════════════════════════

@@ -2,20 +2,31 @@
 Stride — /api/draft
 Generates a LinkedIn post draft using Agnes AI.
 
+Persona context (tone, pillars, evidence) is pulled from the personas table
+and injected into the prompt so drafts sound like the user and can reference
+real moments.
+
 Required env vars:
   AGNES_AI_TOKEN  — Bearer key for Agnes AI
   AGNES_MODEL     — model name, default "agnes-2.0-flash"
+  SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY — for persona lookup
 """
 
 import json
 import os
+import sys
 import requests
-from http.server import BaseHTTPRequestHandler
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _handler import StrideHandler
+from _auth import require_user
 
 _AGNES_URL     = "https://apihub.agnes-ai.com/v1/chat/completions"
 _DEFAULT_MODEL = "agnes-2.0-flash"
+_DEMO_USER_ID  = "demo-user"
 
-SYSTEM_PROMPT = """\
+_SYSTEM_TEMPLATE = """\
 You write LinkedIn posts for early-career professionals. Follow every rule below exactly.
 
 STRUCTURE (in order):
@@ -32,7 +43,17 @@ VOICE & STYLE:
 - No generic filler phrases.
 - Tone: {tone}.
 - Under 280 words total.
-- Output only the post text. No preamble, no quotes around the output, no extra commentary.\
+- Output only the post text. No preamble, no quotes around the output, no extra commentary.
+
+{persona_context}\
+"""
+
+_PERSONA_CONTEXT_TMPL = """\
+
+ABOUT THE AUTHOR (use this to match their voice; never invent facts outside the bullets):
+- Who they are: {persona_summary}
+- Positioning: {positioning}
+- Evidence you may reference if it fits naturally: {evidence}\
 """
 
 
@@ -47,27 +68,40 @@ def _agnes_chat(api_key: str, model: str, messages: list, temperature: float = 0
     return resp.json()["choices"][0]["message"]["content"].strip()
 
 
-class handler(BaseHTTPRequestHandler):
+def _get_user_id(headers: dict) -> str:
+    try:
+        user = require_user(headers)
+        return user["id"]
+    except Exception:
+        return _DEMO_USER_ID
 
-    def do_OPTIONS(self):
-        self._send_cors()
-        self.send_response(204)
-        self.end_headers()
+
+def _load_persona(user_id: str) -> dict | None:
+    try:
+        from _db import get_db
+        db = get_db()
+        result = (
+            db.table("personas")
+            .select("persona_summary,positioning,tone,evidence,pillars")
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        return result.data
+    except Exception:
+        return None
+
+
+class handler(StrideHandler):
 
     def do_POST(self):
-        try:
-            length = int(self.headers.get("Content-Length") or 0)
-            raw = self.rfile.read(length) if length > 0 else b"{}"
-            body = json.loads(raw)
-        except (ValueError, json.JSONDecodeError) as exc:
-            return self._json(400, {"ok": False, "error": f"Invalid JSON: {exc}"})
+        body = self._read_body()
 
-        hook = (body.get("hook") or "").strip()
-        raw_bullets = body.get("storyBullets") or []
+        hook          = (body.get("hook")      or "").strip()
+        raw_bullets   = body.get("storyBullets") or []
         story_bullets = [str(b).strip() for b in raw_bullets if str(b).strip()]
-        cta = (body.get("cta") or "Follow").strip()
-        tone = (body.get("tone") or "Direct").strip()
-        pillar = (body.get("pillar") or "Community").strip()
+        cta           = (body.get("cta")       or "Follow").strip()
+        pillar        = (body.get("pillar")    or "Community").strip()
 
         if not hook:
             return self._json(400, {"ok": False, "error": "hook is required"})
@@ -80,8 +114,38 @@ class handler(BaseHTTPRequestHandler):
 
         model = os.environ.get("AGNES_MODEL", _DEFAULT_MODEL)
 
+        # Pull persona for tone + voice context
+        user_id = _get_user_id(dict(self.headers))
+        persona = _load_persona(user_id)
+
+        # Tone: prefer persona DB value, fall back to request body, then default
+        tone = (body.get("tone") or "").strip()
+        if not tone and persona:
+            tone = persona.get("tone", "")
+        if not tone:
+            tone = "Direct"
+
+        # Build persona context block (injected into system prompt)
+        persona_ctx = ""
+        if persona:
+            evidence = persona.get("evidence") or []
+            if isinstance(evidence, str):
+                try: evidence = json.loads(evidence)
+                except Exception: evidence = []
+            evidence_str = "; ".join(str(e) for e in evidence[:6]) if evidence else "none provided"
+            persona_ctx = _PERSONA_CONTEXT_TMPL.format(
+                persona_summary = persona.get("persona_summary", ""),
+                positioning     = persona.get("positioning",     ""),
+                evidence        = evidence_str,
+            )
+
+        system = _SYSTEM_TEMPLATE.format(
+            pillar         = pillar,
+            tone           = tone,
+            persona_context = persona_ctx,
+        )
+
         bullets_fmt = "\n".join(f"- {b}" for b in story_bullets)
-        system = SYSTEM_PROMPT.replace("{pillar}", pillar).replace("{tone}", tone)
         user_msg = (
             f"Hook:\n{hook}\n\n"
             f"Story bullets (use only these facts):\n{bullets_fmt}\n\n"
@@ -94,29 +158,12 @@ class handler(BaseHTTPRequestHandler):
         try:
             draft = _agnes_chat(api_key, model, [
                 {"role": "system", "content": system},
-                {"role": "user", "content": user_msg},
+                {"role": "user",   "content": user_msg},
             ])
             return self._json(200, {"ok": True, "draft": draft})
         except requests.HTTPError as exc:
-            code = exc.response.status_code if exc.response is not None else 0
-            detail = exc.response.text[:200] if exc.response is not None else str(exc)
+            code   = exc.response.status_code if exc.response is not None else 0
+            detail = exc.response.text[:200]   if exc.response is not None else str(exc)
             return self._json(502, {"ok": False, "error": f"Agnes AI {code}: {detail}"})
         except Exception as exc:
             return self._json(500, {"ok": False, "error": str(exc)})
-
-    def _send_cors(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-
-    def _json(self, status: int, data: dict):
-        body = json.dumps(data).encode()
-        self.send_response(status)
-        self._send_cors()
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def log_message(self, *_):
-        pass
