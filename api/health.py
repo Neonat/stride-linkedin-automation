@@ -25,14 +25,22 @@ def _check_gemma() -> dict:
         resp = requests.post(
             _NIM_URL,
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json={"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 1},
-            timeout=10,
+            # Minimal ping: single-word prompt, tiny output, no thinking mode
+            json={"model": model, "messages": [{"role": "user", "content": "Hi"}], "max_tokens": 5},
+            timeout=25,  # NIM can be slow on cold start; 25s is enough to detect auth vs timeout
         )
         if resp.status_code in (200, 201):
             return {"ok": True, "model": model}
-        return {"ok": False, "error": f"HTTP {resp.status_code}"}
+        # Surface the actual error body so a wrong model name is diagnosable
+        try:
+            detail = resp.json()
+        except Exception:
+            detail = resp.text[:200]
+        return {"ok": False, "error": f"HTTP {resp.status_code}", "detail": detail}
+    except requests.exceptions.Timeout:
+        return {"ok": False, "error": "Timeout after 25s — NIM may be cold-starting, retry in 30s"}
     except Exception as exc:
-        return {"ok": False, "error": type(exc).__name__}
+        return {"ok": False, "error": str(exc)}
 
 
 def _check_nemotron() -> dict:

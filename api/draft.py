@@ -36,12 +36,18 @@ VOICE & STYLE:
 """
 
 
-def _nim_chat(api_key: str, model: str, messages: list, temperature: float = 0.7, max_tokens: int = 600) -> str:
+def _nim_chat(api_key: str, model: str, messages: list, temperature: float = 0.7, max_tokens: int = 700) -> str:
     resp = requests.post(
         _NIM_URL,
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        json={"model": model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens},
-        timeout=30,
+        json={
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            # do NOT pass chat_template_kwargs / enable_thinking — Gemma-3 doesn't support it
+        },
+        timeout=55,  # function maxDuration is 60s; leave 5s headroom
     )
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"].strip()

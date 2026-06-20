@@ -65,9 +65,10 @@ def _generate_profile_card(role: str, field: str, wants: list, tone: str, pillar
                 {"role": "user",   "content": user_msg},
             ],
             "temperature": 0.6,
-            "max_tokens": 300,
+            "max_tokens": 400,
+            # do NOT pass chat_template_kwargs / enable_thinking
         },
-        timeout=20,
+        timeout=55,  # function maxDuration is 60s; leave 5s headroom
     )
     resp.raise_for_status()
     raw = resp.json()["choices"][0]["message"]["content"].strip()
