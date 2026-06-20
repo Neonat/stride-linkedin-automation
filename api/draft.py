@@ -1,10 +1,10 @@
 """
 Stride — /api/draft
-Generates a LinkedIn post draft using NVIDIA NIM (Gemma instruct model).
+Generates a LinkedIn post draft using Agnes AI.
 
 Required env vars:
-  NVIDIA_API_CHAT_KEY   — Bearer key for the chat/instruct model
-  NVIDIA_CHAT_MODEL     — model name, default "google/gemma-4-31b-it"
+  AGNES_AI_TOKEN  — Bearer key for Agnes AI
+  AGNES_MODEL     — model name, default "agnes-2.0-flash"
 """
 
 import json
@@ -12,8 +12,8 @@ import os
 import requests
 from http.server import BaseHTTPRequestHandler
 
-_NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-_DEFAULT_MODEL = "google/gemma-4-31b-it"
+_AGNES_URL     = "https://apihub.agnes-ai.com/v1/chat/completions"
+_DEFAULT_MODEL = "agnes-2.0-flash"
 
 SYSTEM_PROMPT = """\
 You write LinkedIn posts for early-career professionals. Follow every rule below exactly.
@@ -36,18 +36,12 @@ VOICE & STYLE:
 """
 
 
-def _nim_chat(api_key: str, model: str, messages: list, temperature: float = 0.7, max_tokens: int = 700) -> str:
+def _agnes_chat(api_key: str, model: str, messages: list, temperature: float = 0.7, max_tokens: int = 600) -> str:
     resp = requests.post(
-        _NIM_URL,
+        _AGNES_URL,
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        json={
-            "model": model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            # do NOT pass chat_template_kwargs / enable_thinking — Gemma-3 doesn't support it
-        },
-        timeout=55,  # function maxDuration is 60s; leave 5s headroom
+        json={"model": model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens},
+        timeout=30,
     )
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"].strip()
@@ -80,11 +74,11 @@ class handler(BaseHTTPRequestHandler):
         if not story_bullets:
             return self._json(400, {"ok": False, "error": "storyBullets must have at least one item"})
 
-        api_key = os.environ.get("NVIDIA_API_CHAT_KEY")
+        api_key = os.environ.get("AGNES_AI_TOKEN")
         if not api_key:
-            return self._json(500, {"ok": False, "error": "NVIDIA_API_CHAT_KEY is not configured"})
+            return self._json(500, {"ok": False, "error": "AGNES_AI_TOKEN is not configured"})
 
-        model = os.environ.get("NVIDIA_CHAT_MODEL", _DEFAULT_MODEL)
+        model = os.environ.get("AGNES_MODEL", _DEFAULT_MODEL)
 
         bullets_fmt = "\n".join(f"- {b}" for b in story_bullets)
         system = SYSTEM_PROMPT.replace("{pillar}", pillar).replace("{tone}", tone)
@@ -98,7 +92,7 @@ class handler(BaseHTTPRequestHandler):
         )
 
         try:
-            draft = _nim_chat(api_key, model, [
+            draft = _agnes_chat(api_key, model, [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user_msg},
             ])
@@ -106,7 +100,7 @@ class handler(BaseHTTPRequestHandler):
         except requests.HTTPError as exc:
             code = exc.response.status_code if exc.response is not None else 0
             detail = exc.response.text[:200] if exc.response is not None else str(exc)
-            return self._json(502, {"ok": False, "error": f"NVIDIA API {code}: {detail}"})
+            return self._json(502, {"ok": False, "error": f"Agnes AI {code}: {detail}"})
         except Exception as exc:
             return self._json(500, {"ok": False, "error": str(exc)})
 

@@ -3,7 +3,7 @@ Stride — /api/profile
 
 GET  → fetch saved user profile from DB (requires auth)
 POST → two modes, detected from request body:
-  • body has "role" key  → call Gemma to generate onboarding profile card
+  • body has "role" key  → call Agnes AI to generate onboarding profile card
                            returns { ok, persona, positioning, pillarNote }
   • body has "display_name" key → upsert profile to DB (Connect screen setup)
                            returns { ok, profile }
@@ -19,8 +19,8 @@ from _handler import StrideHandler
 from _auth    import require_user
 from _db      import get_db
 
-_NIM_URL      = "https://integrate.api.nvidia.com/v1/chat/completions"
-_DEFAULT_MODEL = "google/gemma-4-31b-it"
+_AGNES_URL     = "https://apihub.agnes-ai.com/v1/chat/completions"
+_DEFAULT_MODEL = "agnes-2.0-flash"
 
 _MAX_NAME_LEN     = 80
 _MAX_HEADLINE_LEN = 160
@@ -38,11 +38,11 @@ No preamble, no markdown, no code fences. Output only the raw JSON object.\
 
 
 def _generate_profile_card(role: str, field: str, wants: list, tone: str, pillars: list) -> dict:
-    api_key = os.environ.get("NVIDIA_API_CHAT_KEY")
+    api_key = os.environ.get("AGNES_AI_TOKEN")
     if not api_key:
-        raise ValueError("NVIDIA_API_CHAT_KEY is not configured")
+        raise ValueError("AGNES_AI_TOKEN is not configured")
 
-    model = os.environ.get("NVIDIA_CHAT_MODEL", _DEFAULT_MODEL)
+    model = os.environ.get("AGNES_MODEL", _DEFAULT_MODEL)
     wants_str   = ", ".join(wants)   if wants   else "general growth"
     pillars_str = ", ".join(pillars) if pillars else "Professional"
 
@@ -56,7 +56,7 @@ def _generate_profile_card(role: str, field: str, wants: list, tone: str, pillar
     )
 
     resp = requests.post(
-        _NIM_URL,
+        _AGNES_URL,
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         json={
             "model": model,
@@ -66,9 +66,8 @@ def _generate_profile_card(role: str, field: str, wants: list, tone: str, pillar
             ],
             "temperature": 0.6,
             "max_tokens": 400,
-            # do NOT pass chat_template_kwargs / enable_thinking
         },
-        timeout=55,  # function maxDuration is 60s; leave 5s headroom
+        timeout=30,
     )
     resp.raise_for_status()
     raw = resp.json()["choices"][0]["message"]["content"].strip()
@@ -134,7 +133,8 @@ class handler(StrideHandler):
                 return self._json(502, {"ok": False, "error": "Model returned unparseable JSON — retry"})
             except requests.HTTPError as exc:
                 code = exc.response.status_code if exc.response is not None else 0
-                return self._json(502, {"ok": False, "error": f"NVIDIA API {code}"})
+                detail = exc.response.text[:200] if exc.response is not None else str(exc)
+                return self._json(502, {"ok": False, "error": f"Agnes AI {code}: {detail}"})
             except ValueError as exc:
                 return self._json(500, {"ok": False, "error": str(exc)})
             except Exception as exc:
