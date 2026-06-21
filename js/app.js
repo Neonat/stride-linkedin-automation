@@ -1696,7 +1696,7 @@ function renderCalendarEvents(events) {
     container.innerHTML = '<p class="text-caption text-muted">No upcoming events found.</p>';
     return;
   }
-  container.innerHTML = events.map(event => {
+  container.innerHTML = events.slice(0, 3).map(event => {
     const start = event.start?.dateTime || event.start?.date;
     const date = start ? new Date(start).toLocaleDateString('en-SG', {
       weekday: 'short', month: 'short', day: 'numeric',

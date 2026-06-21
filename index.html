@@ -56,29 +56,75 @@
      SCREEN — LOGIN
 ════════════════════════════════════════════════════ -->
 <section id="screen-login" class="screen">
-  <div class="login-wrap">
-    <div class="login-card">
+  <div class="login-split">
 
-      <div class="login-header">
-        <div class="navbar-logo" style="justify-content:center; margin-bottom:var(--space-4);">
+    <!-- Left: animated scrolling cards -->
+    <div class="login-marquee-panel" aria-hidden="true">
+      <div class="login-marquee-track">
+        <!-- Column 1 — scrolls up -->
+        <div class="login-marquee-col scroll-up">
+          <div class="lm-card"><p class="lm-title">Just shipped our MVP 🚀</p><p class="lm-sub">After 3 weeks of late nights, we finally launched. Here's what I learned about building under pressure...</p><div class="lm-meta">Technical · 112 👍</div></div>
+          <div class="lm-card"><p class="lm-title">What I wish I knew before my first internship</p><p class="lm-sub">Nobody tells you that the most important skill isn't technical. It's learning to ask the right questions...</p><div class="lm-meta">Leadership · 89 👍</div></div>
+          <div class="lm-card lm-card-accent"><p class="lm-title">🔥 12 day streak</p><p class="lm-sub">Consistency beats perfection. Every. Single. Time.</p><div class="lm-meta">Community · 204 👍</div></div>
+          <div class="lm-card"><p class="lm-title">We won the Social Impact award 🏆</p><p class="lm-sub">72 hours. 4 engineers. One mission. Here's how we built a food surplus dashboard for Singapore's community kitchens...</p><div class="lm-meta">Technical · 156 👍</div></div>
+          <div class="lm-card"><p class="lm-title">Lessons from failing fast</p><p class="lm-sub">Our first idea was terrible. Our second was worse. Our third got us funded. Here's the breakdown...</p><div class="lm-meta">Leadership · 78 👍</div></div>
+          <div class="lm-card lm-card-green"><p class="lm-title">First time speaking at a conference</p><p class="lm-sub">My hands were shaking. My slides were too text-heavy. And I'd do it again in a heartbeat.</p><div class="lm-meta">Community · 231 👍</div></div>
+          <!-- Duplicate for seamless loop -->
+          <div class="lm-card"><p class="lm-title">Just shipped our MVP 🚀</p><p class="lm-sub">After 3 weeks of late nights, we finally launched. Here's what I learned about building under pressure...</p><div class="lm-meta">Technical · 112 👍</div></div>
+          <div class="lm-card"><p class="lm-title">What I wish I knew before my first internship</p><p class="lm-sub">Nobody tells you that the most important skill isn't technical. It's learning to ask the right questions...</p><div class="lm-meta">Leadership · 89 👍</div></div>
+          <div class="lm-card lm-card-accent"><p class="lm-title">🔥 12 day streak</p><p class="lm-sub">Consistency beats perfection. Every. Single. Time.</p><div class="lm-meta">Community · 204 👍</div></div>
+        </div>
+
+        <!-- Column 2 — scrolls down -->
+        <div class="login-marquee-col scroll-down">
+          <div class="lm-card lm-card-blue"><p class="lm-title">Why I almost quit my CS degree</p><p class="lm-sub">Semester 3 broke me. Here's how I rebuilt my relationship with coding and why I'm glad I stayed...</p><div class="lm-meta">Community · 445 👍</div></div>
+          <div class="lm-card"><p class="lm-title">The API that taught me humility</p><p class="lm-sub">I spent 6 hours debugging. The fix was one missing semicolon. I'm not embarrassed. Much.</p><div class="lm-meta">Technical · 167 👍</div></div>
+          <div class="lm-card"><p class="lm-title">Organising our first campus hackathon</p><p class="lm-sub">50 builders. 24 hours. Zero sleep. Here's how we pulled it off and what we'd change...</p><div class="lm-meta">Leadership · 93 👍</div></div>
+          <div class="lm-card lm-card-accent"><p class="lm-title">My internship offer came from a LinkedIn post</p><p class="lm-sub">I almost didn't post it. It felt too small. But someone from the hiring team saw it and reached out...</p><div class="lm-meta">Technical · 312 👍</div></div>
+          <div class="lm-card"><p class="lm-title">Design thinking changed how I write code</p><p class="lm-sub">I used to ship features nobody needed. Then I started interviewing users first. Everything changed.</p><div class="lm-meta">Creative · 88 👍</div></div>
+          <div class="lm-card lm-card-green"><p class="lm-title">From zero followers to 1k in 90 days</p><p class="lm-sub">No hacks. No engagement pods. Just consistent, specific, honest posts about what I was building.</p><div class="lm-meta">Community · 502 👍</div></div>
+          <!-- Duplicate for seamless loop -->
+          <div class="lm-card lm-card-blue"><p class="lm-title">Why I almost quit my CS degree</p><p class="lm-sub">Semester 3 broke me. Here's how I rebuilt my relationship with coding and why I'm glad I stayed...</p><div class="lm-meta">Community · 445 👍</div></div>
+          <div class="lm-card"><p class="lm-title">The API that taught me humility</p><p class="lm-sub">I spent 6 hours debugging. The fix was one missing semicolon. I'm not embarrassed. Much.</p><div class="lm-meta">Technical · 167 👍</div></div>
+        </div>
+
+        <!-- Column 3 — scrolls up (slower) -->
+        <div class="login-marquee-col scroll-up-slow">
+          <div class="lm-card"><p class="lm-title">What hackathons actually teach you</p><p class="lm-sub">It's not about winning. It's about shipping something real under constraints. That's the whole lesson.</p><div class="lm-meta">Leadership · 134 👍</div></div>
+          <div class="lm-card lm-card-green"><p class="lm-title">I gave feedback to a senior engineer today</p><p class="lm-sub">Terrifying. But they thanked me. Here's how I framed it...</p><div class="lm-meta">Leadership · 71 👍</div></div>
+          <div class="lm-card"><p class="lm-title">Side project → real product</p><p class="lm-sub">What started as a weekend project now has 200 users. Here's the inflection point that changed everything...</p><div class="lm-meta">Technical · 289 👍</div></div>
+          <div class="lm-card lm-card-blue"><p class="lm-title">The resume line that got me interviews</p><p class="lm-sub">Not the GPA. Not the school. The specific outcome I wrote in 12 words about a project nobody else had seen.</p><div class="lm-meta">Community · 198 👍</div></div>
+          <div class="lm-card lm-card-accent"><p class="lm-title">🎉 Just got my first full-time offer</p><p class="lm-sub">To everyone who liked, commented, and shared — thank you. This community made it happen.</p><div class="lm-meta">Community · 876 👍</div></div>
+          <div class="lm-card"><p class="lm-title">Open source contribution #1</p><p class="lm-sub">Small PR. Huge feeling. Here's why contributing to open source changed how I think about code quality...</p><div class="lm-meta">Technical · 109 👍</div></div>
+          <!-- Duplicate -->
+          <div class="lm-card"><p class="lm-title">What hackathons actually teach you</p><p class="lm-sub">It's not about winning. It's about shipping something real under constraints. That's the whole lesson.</p><div class="lm-meta">Leadership · 134 👍</div></div>
+          <div class="lm-card lm-card-green"><p class="lm-title">I gave feedback to a senior engineer today</p><p class="lm-sub">Terrifying. But they thanked me. Here's how I framed it...</p><div class="lm-meta">Leadership · 71 👍</div></div>
+        </div>
+      </div>
+
+      <!-- Gradient fade top and bottom -->
+      <div class="login-marquee-fade-top"></div>
+      <div class="login-marquee-fade-bottom"></div>
+    </div>
+
+    <!-- Right: login form -->
+    <div class="login-form-panel">
+      <div class="login-form-inner">
+        <div class="navbar-logo" style="margin-bottom:var(--space-6);">
           <span class="navbar-logo-text">Stri</span><span class="navbar-logo-box">de</span>
         </div>
-        <h2>Welcome back</h2>
-        <p class="login-sub">Sign in to keep your streak going.</p>
+        <h2 style="margin-bottom:var(--space-2);">Welcome back</h2>
+        <p class="text-body text-secondary" style="margin-bottom:var(--space-6);">Sign in to keep your streak going.</p>
+        <button class="btn btn-primary" id="connect-magic-link-btn" style="width:100%; display:flex; align-items:center; justify-content:center; gap:var(--space-2);">
+          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <p class="text-caption text-muted" style="text-align:center; margin-top:var(--space-4);">
+          This also connects your Google Calendar so Stride can detect your moments.
+        </p>
       </div>
-
-      <div style="display:flex; flex-direction:column; gap:var(--space-3); margin-bottom:var(--space-4);">
-        <input type="text" id="login-email" class="input-glass" placeholder="Username" autocomplete="username" />
-        <input type="password" id="login-password" class="input-glass" placeholder="Password" autocomplete="current-password" />
-      </div>
-
-      <p id="login-error" class="text-caption" style="display:none; color:var(--color-red); margin-bottom:var(--space-3);">Invalid credentials. Try demo / password.</p>
-
-      <button id="btn-login-submit" class="btn btn-primary" onclick="handleLogin()">Sign In</button>
-
-      <p class="text-caption text-muted" style="text-align:center; margin-top:var(--space-4);">Demo credentials: <strong>demo</strong> / <strong>password</strong></p>
-
     </div>
+
   </div>
 </section>
 
@@ -388,6 +434,17 @@ Stride helps you share it.</h1>
       Day 4 streak — keep it going
     </div>
 
+    <!-- Upcoming events (full-width, above grid) -->
+    <div class="card home-section" id="upcoming-events-card" style="margin-bottom:var(--space-4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <p class="section-label" style="margin:0;">Upcoming from your calendar</p>
+        <span class="text-caption text-muted" id="gcal-sync-status"></span>
+      </div>
+      <div id="upcoming-events-list">
+        <p class="text-caption text-muted">Connecting to Google Calendar...</p>
+      </div>
+    </div>
+
     <div class="home-grid">
 
       <!-- Profile hero card -->
@@ -517,14 +574,6 @@ Stride helps you share it.</h1>
             <button class="btn btn-ghost" data-goto="collab" style="width:100%; border:1px solid var(--border-default); font-size:13px; justify-content:center;">
               Try Collab Mode
             </button>
-          </div>
-        </div>
-
-        <!-- Upcoming Calendar Events -->
-        <div class="card" id="upcoming-events-card">
-          <p class="section-label" style="margin-bottom:var(--space-3);">Upcoming events</p>
-          <div id="upcoming-events-list">
-            <p class="text-caption text-muted">Loading...</p>
           </div>
         </div>
 

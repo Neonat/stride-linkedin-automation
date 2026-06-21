@@ -1367,3 +1367,83 @@ body:has(#screen-draft.active) #theme-toggle {
 /* Inline feedback messages */
 .connect-feedback-ok  { color: var(--color-green); }
 .connect-feedback-err { color: var(--color-red); }
+
+/* ─────────────────────────────────────────
+   SCREEN — LOGIN (animated marquee)
+───────────────────────────────────────── */
+.login-split {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.login-marquee-panel {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--color-background-secondary);
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .login-marquee-panel { display: block; }
+  .login-form-panel { width: 400px; flex-shrink: 0; }
+}
+
+.login-form-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+}
+
+.login-form-inner { width: 100%; max-width: 320px; }
+
+.login-marquee-track {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  height: 100%;
+}
+
+.login-marquee-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.scroll-up      { animation: scrollUp   25s linear infinite; }
+.scroll-down    { animation: scrollDown 30s linear infinite; }
+.scroll-up-slow { animation: scrollUp   38s linear infinite; }
+
+@keyframes scrollUp   { 0% { transform: translateY(0); }    100% { transform: translateY(-50%); } }
+@keyframes scrollDown { 0% { transform: translateY(-50%); } 100% { transform: translateY(0); } }
+
+.lm-card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--border-default);
+  border-radius: var(--border-radius-lg);
+  padding: 14px 16px;
+  flex-shrink: 0;
+}
+.lm-card-accent { background: rgba(26,95,138,0.08);  border-color: rgba(26,95,138,0.2); }
+.lm-card-green  { background: rgba(39,174,96,0.08);  border-color: rgba(39,174,96,0.2); }
+.lm-card-blue   { background: rgba(90,110,220,0.08); border-color: rgba(90,110,220,0.2); }
+
+.lm-title { font-size: 13px; font-weight: 600; color: var(--text-primary);   margin: 0 0 6px; line-height: 1.4; }
+.lm-sub   { font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; line-height: 1.5; }
+.lm-meta  { font-size: 11px; color: var(--text-muted); }
+
+.login-marquee-fade-top,
+.login-marquee-fade-bottom {
+  position: absolute; left: 0; right: 0;
+  height: 80px; pointer-events: none; z-index: 2;
+}
+.login-marquee-fade-top    { top: 0;    background: linear-gradient(to bottom, var(--color-background-secondary), transparent); }
+.login-marquee-fade-bottom { bottom: 0; background: linear-gradient(to top,    var(--color-background-secondary), transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-up, .scroll-down, .scroll-up-slow { animation: none; }
+}
