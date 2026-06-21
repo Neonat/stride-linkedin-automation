@@ -1213,29 +1213,20 @@ const Connect = (() => {
     }
   }
 
-  // ── Wire magic-link sign-in form ────────────────────────────────────────
+  // ── Wire Google OAuth sign-in ───────────────────────────────────────────
   function _wireAuthForm() {
     const btn = document.getElementById("connect-magic-link-btn");
     if (!btn || btn._wired) return;
     btn._wired = true;
     btn.addEventListener("click", async () => {
-      const email = (document.getElementById("connect-email")?.value || "").trim();
-      if (!email) { _setFeedback("connect-auth-feedback", "Enter your email first.", true); return; }
-
-      btn.disabled = true;
-      _setFeedback("connect-auth-feedback", "Sending…", false);
-
-      const { error } = await _sb.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.href },
+      const { error } = await _sb.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          scopes: "https://www.googleapis.com/auth/calendar.readonly",
+          redirectTo: "https://linked-in-trail-blazer-hackathon.vercel.app",
+        },
       });
-
-      btn.disabled = false;
-      if (error) {
-        _setFeedback("connect-auth-feedback", error.message, true);
-      } else {
-        _setFeedback("connect-auth-feedback", "Magic link sent! Check your inbox.", false);
-      }
+      if (error) console.error(error.message);
     });
   }
 
@@ -1594,7 +1585,12 @@ async function checkSessionAndRoute() {
     return;
   }
 
-  const { data: { session } } = await sb.auth.getSession();
+  // Clear any stale non-Google sessions
+  let { data: { session } } = await sb.auth.getSession();
+  if (session && !session.provider_token) {
+    await sb.auth.signOut();
+    session = null;
+  }
 
   if (session) {
     updateUserUI(session.user);
