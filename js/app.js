@@ -1612,35 +1612,55 @@ async function checkSessionAndRoute() {
   }
 
   const { data: { session } } = await sb.auth.getSession();
+  window._currentSession = session;
 
-  if (session) {
+  if (session?.provider_token) {
     updateUserUI(session.user);
     const profile = await loadProfile();
     if (profile) {
       window._currentProfile = profile;
       populateDashboard(profile, session);
-      showScreen("home");
-    } else if (localStorage.getItem("stride-onboarded") === "true") {
+      loadCalendarEvents().then(events => {
+        renderCalendarEvents(events);
+        if (events !== null) {
+          const nudge = document.getElementById('gcal-nudge-card');
+          if (nudge) nudge.style.display = 'none';
+        }
+      });
+      loadUserPosts().then(posts => { window._linkedInPosts = posts; });
       showScreen("home");
     } else {
       showScreen("onboarding");
     }
+  } else if (session && !session.provider_token) {
+    await new Promise(r => setTimeout(r, 500));
+    const { data: { session: rechecked } } = await sb.auth.getSession();
+    if (rechecked && !rechecked.provider_token) await sb.auth.signOut();
+    showScreen("landing");
   } else {
     showScreen("landing");
   }
 
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === "SIGNED_IN" && session?.provider_token) {
+      window._currentSession = session;
       const profile = await loadProfile();
       if (profile) {
         window._currentProfile = profile;
         populateDashboard(profile, session);
+        loadCalendarEvents().then(events => {
+          renderCalendarEvents(events);
+          const nudge = document.getElementById('gcal-nudge-card');
+          if (nudge) nudge.style.display = 'none';
+        });
+        loadUserPosts().then(posts => { window._linkedInPosts = posts; });
         showScreen("home");
       } else {
         showScreen("onboarding");
       }
     }
     if (event === "SIGNED_OUT") {
+      window._currentSession = null;
       showScreen("landing");
     }
   });
@@ -1649,6 +1669,64 @@ async function checkSessionAndRoute() {
 /* ─────────────────────────────────────────
    BOOT
 ───────────────────────────────────────── */
+async function loadCalendarEvents() {
+  if (!strideSupabase) return [];
+  const { data: { session } } = await strideSupabase.auth.getSession();
+  const token = session?.provider_token;
+  if (!token) return [];
+  try {
+    const now = new Date().toISOString();
+    const resp = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=5&orderBy=startTime&singleEvents=true&timeMin=${now}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return data.items || [];
+  } catch (e) {
+    console.error('Calendar fetch failed:', e);
+    return [];
+  }
+}
+
+function renderCalendarEvents(events) {
+  const container = document.getElementById('upcoming-events-list');
+  if (!container) return;
+  if (!events.length) {
+    container.innerHTML = '<p class="text-caption text-muted">No upcoming events found.</p>';
+    return;
+  }
+  container.innerHTML = events.map(event => {
+    const start = event.start?.dateTime || event.start?.date;
+    const date = start ? new Date(start).toLocaleDateString('en-SG', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: event.start?.dateTime ? 'numeric' : undefined,
+      minute: event.start?.dateTime ? '2-digit' : undefined,
+    }) : '';
+    const safeSummary = (event.summary || '').replace(/'/g, "\\'");
+    return `
+      <div style="display:flex;gap:var(--space-3);align-items:flex-start;padding:var(--space-3) 0;border-bottom:0.5px solid var(--border-default);">
+        <div style="flex-shrink:0;width:36px;height:36px;border-radius:var(--border-radius-sm);background:var(--color-background-info);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-info)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:14px;font-weight:500;margin:0;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${event.summary || 'Untitled event'}</p>
+          <p class="text-caption text-muted" style="margin:2px 0 0;">${date}</p>
+        </div>
+        <button class="btn btn-ghost btn-inline" style="font-size:12px;flex-shrink:0;"
+          onclick="captureEventAsMoment('${safeSummary}','${start || ''}')">+ Capture</button>
+      </div>`;
+  }).join('');
+}
+
+function captureEventAsMoment(title, date) {
+  const titleInput = document.getElementById('moment-title');
+  const dateInput = document.getElementById('moment-date');
+  if (titleInput) titleInput.value = title;
+  if (dateInput && date) dateInput.value = date.split('T')[0];
+  openMomentModal();
+}
+
 async function savePostToSupabase(postText, pillar) {
   if (!strideSupabase) return;
   const { data: { session } } = await strideSupabase.auth.getSession();

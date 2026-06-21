@@ -727,3 +727,39 @@ body {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ─────────────────────────────────────────
+   DARK MODE OVERRIDES
+───────────────────────────────────────── */
+[data-theme="dark"] .chip.selected {
+  background: #1A5F8A !important;
+  color: #ffffff !important;
+  border-color: #2E7FB8 !important;
+}
+
+[data-theme="dark"] .btn-primary {
+  background: #2E7FB8;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .btn-ghost {
+  color: #E0E6ED;
+  border-color: rgba(255,255,255,0.2);
+}
+
+[data-theme="dark"] .stride-input,
+[data-theme="dark"] .input-glass {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .stride-input::placeholder,
+[data-theme="dark"] .input-glass::placeholder {
+  color: rgba(255,255,255,0.4);
+}
+
+[data-theme="dark"] .card {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+}
