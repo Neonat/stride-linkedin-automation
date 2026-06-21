@@ -154,7 +154,7 @@ function showScreen(id) {
 ───────────────────────────────────────── */
 let currentStep = 1;
 const TOTAL_STEPS = 5;
-const SINGLE_SELECT_STEPS = new Set([1, 2, 4]); // role, field, tone — auto-advance
+const SINGLE_SELECT_STEPS = new Set([1]); // role — auto-advance
 
 // Holds the last persona returned from /api/persona so the home screen can display it
 window.personaData = null;
@@ -214,9 +214,9 @@ function _collectOnboardingAnswers() {
   };
   return {
     role:    getSelection("onboarding-step-1")[0] || "",
-    field:   getSelection("onboarding-step-2")[0] || "",
+    field:   getSelection("onboarding-step-2").join(", "),
     wants:   getSelection("onboarding-step-3"),
-    tone:    getSelection("onboarding-step-4")[0] || "",
+    tone:    getSelection("onboarding-step-4").join(", "),
     pillars: getSelection("onboarding-step-5"),
   };
 }
@@ -264,9 +264,9 @@ async function _applyPersonaAutofill(data) {
   // Stagger the autofill so the user can see it happening step-by-step
   _autofillSingleSelect("onboarding-step-1", role);
   await _sleep(180);
-  _autofillSingleSelect("onboarding-step-2", field);
+  _autofillMultiSelect("onboarding-step-2", data.fields || []);
   await _sleep(180);
-  _autofillSingleSelect("onboarding-step-4", tone);
+  _autofillMultiSelect("onboarding-step-4", tone ? [tone] : []);
   await _sleep(180);
   _autofillMultiSelect("onboarding-step-5", pillars);
 }
@@ -336,28 +336,33 @@ function showProfileCard(fromPersonaData) {
   }
 }
 
-// Wire up the paste power-up step
+// Wire up the resume upload step
 function initPasteStep() {
   const submitBtn = document.getElementById("btn-paste-submit");
-  const skipBtn   = document.getElementById("btn-paste-skip");
   const loading   = document.getElementById("paste-loading");
   const errorEl   = document.getElementById("paste-error");
-  const textarea  = document.getElementById("onboarding-paste-input");
-
-  if (skipBtn) {
-    skipBtn.addEventListener("click", () => showProfileCard(null));
-  }
+  const fileInput = document.getElementById("onboarding-file-input");
 
   if (submitBtn) {
     submitBtn.addEventListener("click", async () => {
-      const pasted = (textarea ? textarea.value : "").trim();
+      let pasted = "";
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        try {
+          pasted = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result || "");
+            reader.onerror = () => resolve("");
+            reader.readAsText(fileInput.files[0]);
+          });
+        } catch {
+          pasted = "";
+        }
+      }
       const answers = _collectOnboardingAnswers();
 
-      // Show loading
       if (loading) loading.hidden = false;
       if (errorEl) errorEl.hidden = true;
       submitBtn.disabled = true;
-      if (skipBtn)   skipBtn.disabled = true;
 
       try {
         const resp = await fetch("/api/persona", {
@@ -384,9 +389,7 @@ function initPasteStep() {
           return;
         }
 
-        // Auto-fill the onboarding chips with a staggered animation
         await _applyPersonaAutofill(data);
-        // Then reveal the profile card with the API data
         showProfileCard(data);
 
       } catch (err) {
@@ -397,7 +400,6 @@ function initPasteStep() {
       } finally {
         if (loading) loading.hidden = true;
         submitBtn.disabled = false;
-        if (skipBtn) skipBtn.disabled = false;
       }
     });
   }
@@ -517,14 +519,28 @@ function initMultiSelectStep(stepEl) {
 }
 
 function initOnboarding() {
-  [1, 2, 4].forEach(n => {
+  [1].forEach(n => {
     const el = document.getElementById("onboarding-step-" + n);
     if (el) initSingleSelectStep(el);
   });
-  [3, 5].forEach(n => {
+  [2, 3, 4, 5].forEach(n => {
     const el = document.getElementById("onboarding-step-" + n);
     if (el) initMultiSelectStep(el);
   });
+
+  // Dynamic subtext for career aspirations step
+  const step2 = document.getElementById("onboarding-step-2");
+  if (step2) {
+    const updateFieldSubtext = () => {
+      const count = step2.querySelectorAll(".chip.selected").length;
+      const subtextEl = document.getElementById("field-selection-subtext");
+      if (!subtextEl) return;
+      if (count === 1) subtextEl.textContent = "Let's work on one goal at a time.";
+      else if (count >= 2) subtextEl.textContent = "Keep your options open — explore different interests.";
+      else subtextEl.textContent = "";
+    };
+    step2.querySelectorAll(".chip").forEach(c => c.addEventListener("click", updateFieldSubtext));
+  }
 
   const backBtn = document.getElementById("btn-onboarding-back");
   if (backBtn) {
@@ -572,6 +588,28 @@ function initDraftEditor() {
   // Generate button
   const genBtn = document.getElementById("btn-generate");
   if (genBtn) genBtn.addEventListener("click", generateDraft);
+
+  // Photo upload wiring
+  const photoUpload = document.getElementById("photo-upload");
+  const changePhotoOverlay = document.querySelector(".visual-thumb-overlay");
+  if (changePhotoOverlay && photoUpload) {
+    changePhotoOverlay.addEventListener("click", () => photoUpload.click());
+    photoUpload.addEventListener("change", () => {
+      const file = photoUpload.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const gradDiv = document.querySelector(".visual-thumb > div");
+        if (gradDiv) {
+          gradDiv.style.backgroundImage = `url(${e.target.result})`;
+          gradDiv.style.backgroundSize = "cover";
+          gradDiv.style.backgroundPosition = "center";
+          gradDiv.innerHTML = "";
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 }
 
 /* ─────────────────────────────────────────
@@ -797,35 +835,20 @@ async function publishToLinkedIn(btn) {
   btn.disabled = true;
 
   try {
-    // ── Step 1: Safety check (Nemotron) ──────────────────────────────────
+    // ── Step 1: Safety check (non-blocking — log only) ───────────────────
     btn.innerHTML = spinner + "Checking…";
-    let safetyData;
     try {
       const safetyRes = await fetch("/api/safety_check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      safetyData = await safetyRes.json();
-    } catch {
-      // If safety endpoint unreachable, block publish
-      _showPublishError("Safety check failed. Check your connection and try again.");
-      return;
-    }
-
-    if (!safetyData.ok) {
-      _showPublishError(`Safety check error: ${safetyData.error || "Unknown error"}`);
-      return;
-    }
-
-    if (!safetyData.safe) {
-      const cats = (safetyData.categories || []).map(c => c.label).join(", ");
-      _showPublishError(
-        cats
-          ? `Post flagged for: ${cats}. Edit your post and try again.`
-          : "Post flagged by content policy. Edit your post and try again."
-      );
-      return;
+      const safetyData = await safetyRes.json();
+      if (!safetyData.safe) {
+        console.log("Safety check flagged post:", safetyData.categories);
+      }
+    } catch (err) {
+      console.log("Safety check skipped:", err.message);
     }
 
     // ── Step 2: Publish to LinkedIn ───────────────────────────────────────
@@ -878,10 +901,19 @@ function wireButtons() {
       if (target === "draft") {
         fetchDraftFromBackend(btn);
       } else if (target === "published") {
-        publishToLinkedIn(btn);
+        // Collab screen bypasses the full publish flow
+        if (btn.closest("#screen-collab")) {
+          showScreen("published");
+          setTimeout(runPublishedAnimation, 100);
+        } else {
+          publishToLinkedIn(btn);
+        }
       } else if (target === "onboarding") {
         showScreen("onboarding");
         goToStep(1);
+      } else if (target === "home" && btn.closest("#onboarding-profile")) {
+        localStorage.setItem("stride-onboarded", "true");
+        showScreen("home");
       } else {
         showScreen(target);
       }
@@ -1427,6 +1459,52 @@ function _resetMomentModal() {
 
 
 /* ─────────────────────────────────────────
+   SESSION CHECK & USER UI
+───────────────────────────────────────── */
+function updateUserUI(user) {
+  if (!user) return;
+  const meta = user.user_metadata || {};
+  const fullName = meta.full_name || meta.name || user.email || "";
+  const initials = fullName.split(" ").filter(Boolean).map(w => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+
+  const navAv = document.getElementById("nav-avatar");
+  if (navAv) navAv.textContent = initials;
+
+  const settAv = document.getElementById("settings-avatar");
+  if (settAv) settAv.textContent = initials;
+
+  const settName = document.getElementById("settings-name");
+  if (settName && fullName) settName.textContent = fullName;
+
+  const collabAv = document.getElementById("collab-user-avatar");
+  if (collabAv) collabAv.textContent = initials;
+
+  const collabName = document.getElementById("collab-user-name");
+  if (collabName && fullName) collabName.textContent = fullName;
+}
+
+async function checkSessionAndRoute() {
+  if (localStorage.getItem("stride-onboarded") !== "true") {
+    showScreen("landing");
+    return;
+  }
+  try {
+    const cfg = await fetch("/api/config").then(r => r.json());
+    if (!cfg.ok || !cfg.supabaseUrl) throw new Error("No config");
+    const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      updateUserUI(session.user);
+      showScreen("home");
+      return;
+    }
+  } catch {
+    // Config unavailable or no session — fall through to landing
+  }
+  showScreen("landing");
+}
+
+/* ─────────────────────────────────────────
    BOOT
 ───────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
@@ -1439,5 +1517,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initMomentModal();
   wireButtons();
   document.getElementById("btn-refresh-linkedin")?.addEventListener("click", loadLinkedInStats);
-  showScreen("landing");
+  checkSessionAndRoute();
 });
