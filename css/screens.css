@@ -1554,6 +1554,9 @@ body:has(#screen-draft.active) #theme-toggle {
 .lm-card-green  { background: rgba(39,174,96,0.08);  border-color: rgba(39,174,96,0.2); }
 .lm-card-blue   { background: rgba(90,110,220,0.08); border-color: rgba(90,110,220,0.2); }
 
+.lm-author { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.lm-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; overflow: hidden; }
+.lm-name   { font-size: 12px; font-weight: 600; color: var(--text-primary); }
 .lm-title { font-size: 13px; font-weight: 600; color: var(--text-primary);   margin: 0 0 6px; line-height: 1.4; }
 .lm-sub   { font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; line-height: 1.5; }
 .lm-meta  { font-size: 11px; color: var(--text-muted); }
