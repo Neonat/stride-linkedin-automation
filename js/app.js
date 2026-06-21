@@ -913,6 +913,14 @@ function wireButtons() {
         goToStep(1);
       } else if (target === "home" && btn.closest("#onboarding-profile")) {
         localStorage.setItem("stride-onboarded", "true");
+        saveOnboardingProfile({
+          role:        getSelectedChips("onboarding-step-1"),
+          field:       getSelectedChips("onboarding-step-2"),
+          goals:       getSelectedChips("onboarding-step-3"),
+          tone:        getSelectedChips("onboarding-step-4"),
+          pillars:     getSelectedChips("onboarding-step-5"),
+          positioning: document.querySelector(".profile-positioning")?.textContent || "",
+        });
         showScreen("home");
       } else {
         showScreen(target);
@@ -1459,8 +1467,104 @@ function _resetMomentModal() {
 
 
 /* ─────────────────────────────────────────
-   SESSION CHECK & USER UI
+   SUPABASE CLIENT + PROFILE PERSISTENCE
 ───────────────────────────────────────── */
+let strideSupabase = null;
+
+async function initSupabase() {
+  if (strideSupabase) return strideSupabase;
+  try {
+    const cfg = await fetch("/api/config").then(r => r.json());
+    if (!cfg.ok || !cfg.supabaseUrl) return null;
+    strideSupabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  } catch {
+    strideSupabase = null;
+  }
+  return strideSupabase;
+}
+
+async function saveOnboardingProfile(answers) {
+  const sb = strideSupabase;
+  if (!sb) return;
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+  const { error } = await sb.from("profiles").upsert({
+    id:          session.user.id,
+    email:       session.user.email,
+    full_name:   session.user.user_metadata?.full_name,
+    avatar_url:  session.user.user_metadata?.avatar_url,
+    role:        answers.role,
+    field:       answers.field,
+    goals:       answers.goals,
+    tone:        answers.tone,
+    pillars:     answers.pillars,
+    positioning: answers.positioning,
+  });
+  if (error) console.error("Failed to save profile:", error.message);
+}
+
+async function loadProfile() {
+  const sb = strideSupabase;
+  if (!sb) return null;
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return null;
+  const { data, error } = await sb
+    .from("profiles").select("*")
+    .eq("id", session.user.id).single();
+  if (error || !data) return null;
+  return data;
+}
+
+function getSelectedChips(stepId) {
+  return Array.from(document.querySelectorAll(`#${stepId} .chip.selected`))
+    .map(el => el.textContent.trim());
+}
+
+function populateDashboard(profile, session) {
+  const name = profile.full_name || session.user.email || "You";
+  const initials = name.split(" ").filter(Boolean).map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
+
+  const navAv = document.getElementById("nav-avatar");
+  if (navAv) {
+    if (profile.avatar_url) {
+      navAv.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    } else {
+      navAv.textContent = initials;
+    }
+  }
+
+  const settAv = document.getElementById("settings-avatar");
+  if (settAv) settAv.textContent = initials;
+
+  const settName = document.getElementById("settings-name");
+  if (settName) settName.textContent = name;
+
+  const collabAv = document.getElementById("collab-user-avatar");
+  if (collabAv) collabAv.textContent = initials;
+
+  const collabName = document.getElementById("collab-user-name");
+  if (collabName) collabName.textContent = name;
+
+  const heroAv = document.getElementById("profile-hero-avatar");
+  if (heroAv) heroAv.textContent = initials;
+
+  const heroName = document.getElementById("profile-hero-name");
+  if (heroName) heroName.textContent = name;
+
+  const heroEmail = document.getElementById("profile-hero-email");
+  if (heroEmail) heroEmail.textContent = profile.email || session.user.email || "";
+
+  const heroPos = document.getElementById("profile-hero-positioning");
+  if (heroPos) heroPos.textContent = profile.positioning || "";
+
+  const heroPills = document.getElementById("profile-hero-pills");
+  if (heroPills && Array.isArray(profile.pillars) && profile.pillars.length) {
+    heroPills.innerHTML = profile.pillars
+      .map(p => `<span class="chip chip-technical" style="font-size:11px;padding:2px 10px;">${p}</span>`)
+      .join("");
+  }
+}
+
 function updateUserUI(user) {
   if (!user) return;
   const meta = user.user_metadata || {};
@@ -1484,24 +1588,44 @@ function updateUserUI(user) {
 }
 
 async function checkSessionAndRoute() {
-  if (localStorage.getItem("stride-onboarded") !== "true") {
+  const sb = await initSupabase();
+  if (!sb) {
     showScreen("landing");
     return;
   }
-  try {
-    const cfg = await fetch("/api/config").then(r => r.json());
-    if (!cfg.ok || !cfg.supabaseUrl) throw new Error("No config");
-    const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) {
-      updateUserUI(session.user);
+
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (session) {
+    updateUserUI(session.user);
+    const profile = await loadProfile();
+    if (profile) {
+      populateDashboard(profile, session);
       showScreen("home");
-      return;
+    } else if (localStorage.getItem("stride-onboarded") === "true") {
+      showScreen("home");
+    } else {
+      showScreen("onboarding");
     }
-  } catch {
-    // Config unavailable or no session — fall through to landing
+  } else {
+    showScreen("landing");
   }
-  showScreen("landing");
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === "SIGNED_IN" && session) {
+      updateUserUI(session.user);
+      const profile = await loadProfile();
+      if (profile) {
+        populateDashboard(profile, session);
+        showScreen("home");
+      } else {
+        showScreen("onboarding");
+      }
+    }
+    if (event === "SIGNED_OUT") {
+      showScreen("landing");
+    }
+  });
 }
 
 /* ─────────────────────────────────────────
