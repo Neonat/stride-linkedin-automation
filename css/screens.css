@@ -48,90 +48,188 @@ html, body {
 /* Single hue-family gradient (blue/teal only), replacing the multi-hue
    ambient blobs for this screen — lightness varies top-to-bottom, hue
    never does. Opaque, so it fully occludes the blob layer beneath it. */
-#screen-landing {
-  background: linear-gradient(180deg, var(--landing-bg-1) 0%, var(--landing-bg-2) 50%, var(--landing-bg-3) 100%);
+/* ─────────────────────────────────────────
+   LANDING NAV
+───────────────────────────────────────── */
+#landing-nav {
+  display: none; /* hidden by default; shown via body.on-landing below */
+  position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+  height: 88px;
+  background: rgba(255,255,255,0.88);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
-/* Belt-and-suspenders: also explicitly hide the blob layer (driven from
-   JS, not :has(), so it works in browsers without :has() support too). */
+body.on-landing #landing-nav { display: flex; }
 body.on-landing .bg-blobs { display: none; }
 
+.lnav-inner {
+  width: 100%; max-width: 1200px; margin: 0 auto;
+  padding: 0 6vw;
+  display: flex; align-items: center;
+}
+
+.lnav-logo { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+
+.lnav-links {
+  display: flex; align-items: center; gap: 28px;
+  margin-left: auto; margin-right: 28px;
+}
+.lnav-link {
+  font-size: 17px; font-weight: 500; color: #5B6473;
+  text-decoration: none; transition: color 0.15s;
+}
+.lnav-link:hover { color: #0E1116; }
+
+.lnav-cta {
+  font-size: 15px; font-weight: 600;
+  padding: 10px 22px; border-radius: 999px;
+  background: #1746C8; color: #ffffff;
+  border: none; cursor: pointer; white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.lnav-cta:hover { opacity: 0.88; }
+
+/* ─────────────────────────────────────────
+   LANDING SCREEN
+───────────────────────────────────────── */
+#screen-landing {
+  background: #ffffff;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  overflow-y: auto; overflow-x: hidden;
+}
+
+/* ── Hero ── */
+.lhero {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.lhero-copy {
+  position: absolute;
+  left: 6vw; top: 50%; transform: translateY(-50%);
+  width: 46vw; max-width: 480px;
+  z-index: 10;
+  padding-top: 88px; /* clear fixed nav */
+}
+
+.lhero-eyebrow {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: #1746C8;
+  margin: 0 0 18px;
+}
+
+.lhero-h1 {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: clamp(36px, 5vw, 72px);
+  font-weight: 600; line-height: 0.96;
+  letter-spacing: -0.038em; color: #0E1116;
+  margin: 0 0 24px;
+}
+
+.lhero-body {
+  font-size: clamp(14px, 1vw, 17px);
+  color: #5B6473; line-height: 1.6; max-width: 380px;
+  margin: 0 0 32px;
+}
+
+.lhero-ctas { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+.lhero-btn-primary {
+  font-size: 15px; font-weight: 600;
+  padding: 13px 26px; border-radius: 999px;
+  background: #1746C8; color: #ffffff;
+  border: none; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.lhero-btn-primary:hover { opacity: 0.88; }
+
+.lhero-btn-replay {
+  font-size: 15px; font-weight: 500; color: #5B6473;
+  background: none; border: none; cursor: pointer; padding: 0;
+  text-decoration: underline; text-underline-offset: 3px;
+  transition: color 0.15s;
+}
+.lhero-btn-replay:hover { color: #0E1116; }
+
+/* Blue floating panel */
+.lhero-panel {
+  position: absolute;
+  left: 60vw; right: 6vw;
+  top: 24vh; bottom: 4vh;
+  background: #1746C8;
+  border-radius: 30px;
+  z-index: 5;
+}
+
+/* Hero figure */
+.lhero-figure {
+  position: absolute;
+  left: 77vw; transform: translateX(-50%);
+  bottom: 9vh;
+  height: 60vh; width: auto;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* ── Built With ── */
+.lbuilt {
+  border-top: 1px solid #ECEEF2;
+  padding: 80px 6vw 100px;
+  text-align: center;
+  background: #ffffff;
+}
+
+.lbuilt-label {
+  font-size: 13px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #9aa1ad;
+  margin: 0 0 36px;
+}
+
+.lbuilt-logos {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 40px 56px;
+}
+
+.lbuilt-logo {
+  width: 28px; height: 28px;
+  opacity: 0.7; vertical-align: middle;
+}
+
+.lbuilt-logo-name {
+  font-size: 18px; font-weight: 600; color: #9aa1ad;
+  vertical-align: middle;
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-left: -44px; /* collapse with preceding svg */
+}
+
+/* Use flex items so we can pair svg+name */
+.lbuilt-logos {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 16px 48px;
+}
+
+/* Each partner = svg immediately followed by a span — treat as a pair */
+.lbuilt-logos svg.lbuilt-logo { flex-shrink: 0; }
+
+/* Reset the negative margin hack — use a flex sub-group instead */
+.lbuilt-logo-name { margin-left: 0; }
+
+/* Wrap each pair */
+.lbuilt-pair {
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* ── Below-the-fold content ── */
 .landing-inner {
   max-width: var(--dashboard-w);
   margin: 0 auto;
-  padding: 0 var(--space-5) var(--space-12);
-}
-
-.landing-hero {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: var(--space-12) 0 var(--space-10);
-  text-align: center;
-}
-
-.landing-hero-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  margin-bottom: var(--space-8);
-}
-/* Same wordmark treatment as the navbar (.navbar-logo-text/.navbar-logo-box),
-   just scaled up for the hero. */
-.landing-hero-logo .navbar-logo-text,
-.landing-hero-logo .navbar-logo-box {
-  font-size: 96px;
-}
-.landing-hero-logo .navbar-logo-box { border-radius: 20px; padding: 0 12px; }
-
-.landing-headline {
-  font-size: 32px; font-weight: 700; line-height: 1.25;
-  color: var(--text-primary); margin-bottom: var(--space-4);
-  white-space: pre-line;
-}
-
-.landing-subline {
-  font-size: 16px; color: var(--text-secondary);
-  line-height: 1.6; margin-bottom: var(--space-8);
-}
-
-/* Product preview card — backs up the hero's claims with a real glimpse of the app.
-   Sits at least 32px below the CTA above it so the two don't feel glued together. */
-.landing-preview {
-  max-width: 360px; margin: var(--space-10) auto 0; text-align: left;
-  background: var(--glass-surface); border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg); padding: var(--space-5);
-  box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-highlight);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
-}
-.landing-preview-header {
-  display: flex; align-items: center; gap: var(--space-2);
-  font-size: 13px; font-weight: 600; color: var(--color-amber-dark);
-  margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--glass-border);
-}
-.landing-preview-header .icon-flame { color: var(--color-amber); }
-.landing-preview-row { margin-bottom: var(--space-3); }
-.landing-preview-row:last-child { margin-bottom: 0; }
-.landing-preview-tag {
-  display: inline-block;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
-  padding: 2px var(--space-2); border-radius: var(--radius-sm);
-  background: var(--pillar-technical-bg); color: var(--pillar-technical-text);
-  margin-bottom: var(--space-1);
-}
-.landing-preview-text {
-  font-size: 13px; color: var(--text-primary); line-height: 1.5;
-}
-
-.landing-scroll-hint {
-  display: flex; justify-content: center;
-  margin-top: var(--space-8); color: var(--color-mist);
+  padding: 60px var(--space-5) var(--space-12);
 }
 
 .landing-section { margin-bottom: clamp(56px, 7vw, 80px); }
-
 .landing-section-header { text-align: center; margin-bottom: var(--space-6); }
 
 .landing-eyebrow {
@@ -155,8 +253,6 @@ body.on-landing .bg-blobs { display: none; }
   .problem-cards, .how-steps, .feature-cards {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4);
   }
-  .landing-headline { font-size: 42px; }
-  .landing-subline { font-size: 18px; }
 }
 
 .problem-card, .how-step, .feature-card {
@@ -166,7 +262,6 @@ body.on-landing .bg-blobs { display: none; }
   backdrop-filter: blur(var(--glass-blur));
 }
 
-/* Problem cards — lighter/neutral surface, warning-style icon */
 .problem-card {
   background: var(--glass-surface); border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), inset 0 1px 1px var(--glass-highlight);
@@ -179,7 +274,6 @@ body.on-landing .bg-blobs { display: none; }
 }
 .problem-text { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
 
-/* How it works — subtle blue accent tint/border, distinct from the neutral problem cards */
 .how-step {
   background: linear-gradient(160deg, rgba(46,127,184,0.10), var(--glass-surface) 60%);
   border: 1px solid rgba(46,127,184,0.22);
@@ -194,7 +288,6 @@ body.on-landing .bg-blobs { display: none; }
 .how-step-icon .icon svg { stroke-width: 2; }
 .how-step-text { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
 
-/* What you get — elevated/bordered feature cards */
 .feature-card {
   background: var(--glass-surface-strong);
   border: 1.5px solid rgba(46,127,184,0.3);
@@ -214,6 +307,23 @@ body.on-landing .bg-blobs { display: none; }
 
 .landing-cta { padding: var(--space-8) var(--space-6) var(--space-4); text-align: center; }
 .landing-cta p { font-size: 13px; color: var(--text-muted); margin-top: var(--space-3); }
+
+/* Mobile: stack hero vertically */
+@media (max-width: 768px) {
+  .lhero { min-height: 100svh; }
+  .lhero-copy {
+    position: relative; left: auto; top: auto; transform: none;
+    width: 100%; max-width: 100%; padding: 120px 24px 320px;
+  }
+  .lhero-panel {
+    left: 10vw; right: 10vw;
+    top: auto; bottom: 0; height: 260px;
+  }
+  .lhero-figure {
+    left: 50%; bottom: 0; height: 250px;
+  }
+  .lnav-links { display: none; }
+}
 
 /* ─────────────────────────────────────────
    SCREEN LOGIN

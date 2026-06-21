@@ -2286,6 +2286,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   })
 
+  // "Replay animation" button on landing hero
+  document.getElementById('btn-replay-anim')?.addEventListener('click', () => {
+    window.dispatchEvent(new Event('stride-replay'));
+  });
+
   if (isFirstVisit) {
     showScreen('landing');
     // Wire up auth state listener without routing (landing is shown)
