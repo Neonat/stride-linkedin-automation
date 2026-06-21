@@ -40,7 +40,7 @@
     <a href="#" class="nav-tab" data-goto="settings">Settings</a>
   </div>
   <div style="display:flex; align-items:center; gap:var(--space-2); cursor:pointer;" data-goto="settings">
-    <div class="avatar">AT</div>
+    <div class="avatar" id="nav-avatar">AT</div>
     <span class="icon" style="color:var(--text-muted);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
   </div>
 </nav>
@@ -258,14 +258,15 @@ Stride helps you share it.</h1>
 
     <!-- Step 2: Field -->
     <div class="onboarding-step" id="onboarding-step-2">
-      <p class="onboarding-question">What field do you want to be known in?</p>
-      <div class="onboarding-chips" style="margin-bottom:var(--space-5);">
+      <p class="onboarding-question">What are your career aspirations?</p>
+      <div class="onboarding-chips" style="margin-bottom:var(--space-3);">
         <span class="chip chip-technical">AI</span>
         <span class="chip chip-leadership">Product</span>
         <span class="chip chip-creative">Design</span>
         <span class="chip chip-community">Finance</span>
         <span class="chip chip-research">Sustainability</span>
       </div>
+      <p id="field-selection-subtext" style="min-height:1.4em; font-size:13px; color:var(--text-muted); margin-bottom:var(--space-4);"></p>
       <button class="btn btn-primary" data-next-step disabled>Continue</button>
     </div>
 
@@ -284,7 +285,7 @@ Stride helps you share it.</h1>
 
     <!-- Step 4: Tone -->
     <div class="onboarding-step" id="onboarding-step-4">
-      <p class="onboarding-question">What tone sounds like you?</p>
+      <p class="onboarding-question">What tones sound like you? Pick all that apply.</p>
       <div class="onboarding-chips" style="margin-bottom:var(--space-5);">
         <span class="chip chip-research">Thoughtful</span>
         <span class="chip chip-technical">Direct</span>
@@ -316,14 +317,8 @@ Stride helps you share it.</h1>
         <p class="onboarding-question" style="margin-bottom:var(--space-2);">Paste anything that's you.</p>
         <p class="text-small text-muted" style="margin-bottom:var(--space-5);">Your résumé, LinkedIn about section, bio — Stride reads it and fills in your profile. Totally optional.</p>
       </div>
-      <div class="paste-journal-wrap">
-        <textarea
-          id="onboarding-paste-input"
-          class="paste-journal-textarea"
-          rows="8"
-          placeholder="Paste your résumé, LinkedIn summary, or anything that captures who you are professionally…"
-        ></textarea>
-        <div id="paste-char-hint" class="paste-char-hint">Paste as much or as little as you like.</div>
+      <div style="margin-bottom:var(--space-4);">
+        <input type="file" id="onboarding-file-input" accept=".pdf,.docx" style="width:100%;">
       </div>
 
       <!-- Loading state -->
@@ -337,12 +332,10 @@ Stride helps you share it.</h1>
       <!-- Error state -->
       <div id="paste-error" class="draft-error-msg" style="margin-bottom:var(--space-4);" hidden></div>
 
-      <div style="display:flex; flex-direction:column; gap:var(--space-3); margin-top:var(--space-4);">
-        <button class="btn btn-primary" id="btn-paste-submit">
-          <span class="icon"><svg width="14" height="14" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      <div style="margin-top:var(--space-4);">
+        <button class="btn btn-primary" id="btn-paste-submit" style="width:100%;">
           Let Stride fill this in
         </button>
-        <button class="btn btn-ghost" id="btn-paste-skip">Skip — I'll fill it in myself</button>
       </div>
     </div>
 
@@ -370,9 +363,9 @@ Stride helps you share it.</h1>
         <span class="persona-learning-icon">
           <svg width="14" height="14" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </span>
-        <span id="profile-autofill-note-text">Stride filled this in from your material. Everything's editable.</span>
+        <span id="profile-autofill-note-text">Stride filled this in from your material.</span>
       </div>
-      <button class="btn btn-primary" data-goto="home">Enter Stride</button>
+      <button class="btn btn-primary" data-goto="home">Take it in your Stride</button>
     </div>
 
   </div>
@@ -488,7 +481,7 @@ Stride helps you share it.</h1>
         </div>
 
         <!-- Capture a moment -->
-        <div class="card">
+        <div class="card" style="overflow-y:auto; max-height:300px; -webkit-overflow-scrolling:touch;">
           <p class="section-label">Grow your persona</p>
           <p class="text-small text-secondary" style="margin-bottom:var(--space-4);">Log what happened. Stride learns from every moment you capture.</p>
           <button class="btn btn-primary" id="btn-capture-moment">
@@ -508,6 +501,21 @@ Stride helps you share it.</h1>
               Try Collab Mode
             </button>
           </div>
+        </div>
+
+        <!-- Google Calendar persona nudge -->
+        <div class="card" style="border: 1px solid var(--color-stride-blue); background: transparent;">
+          <p style="font-weight:600; font-size:14px; margin:0 0 var(--space-2) 0;">
+            Doesn't sound like you?
+          </p>
+          <p class="text-caption text-secondary" style="margin-bottom:var(--space-3);">
+            Connect your Google Calendar so Stride can build a better picture of who you are
+            and what you've been up to.
+          </p>
+          <button class="btn btn-ghost" data-goto="connect"
+                  style="width:100%; border:1px solid var(--border-default); font-size:13px;">
+            Connect Google Calendar
+          </button>
         </div>
 
       </div>
@@ -563,7 +571,7 @@ Stride helps you share it.</h1>
     <span class="chip chip-community" style="font-size:11px;padding:2px 8px;">Community</span>
   </nav>
 
-  <div class="mobile-wrap wrap-dashboard" style="padding-bottom:80px;">
+  <div class="mobile-wrap wrap-dashboard" style="padding-bottom:100px;">
 
     <div class="draft-grid">
 
@@ -667,6 +675,7 @@ Stride helps you share it.</h1>
             <span class="draft-section-tag">Visuals</span>
             <span class="draft-section-title">Add a photo</span>
           </div>
+          <input type="file" id="photo-upload" accept="image/*" style="display:none">
           <div class="visual-thumb">
             <!-- Placeholder event photo using a generated gradient instead of an external image -->
             <div style="
@@ -776,8 +785,8 @@ Stride helps you share it.</h1>
     <!-- Authors -->
     <div class="collab-authors">
       <div class="collab-author">
-        <div class="avatar avatar-lg">AT</div>
-        <span>Alex Tan</span>
+        <div class="avatar avatar-lg" id="collab-user-avatar">AT</div>
+        <span id="collab-user-name">Alex Tan</span>
       </div>
       <span class="collab-plus">+</span>
       <div class="collab-author">
@@ -901,10 +910,10 @@ Stride helps you share it.</h1>
     <div class="card" style="margin-bottom:var(--space-6);">
       <p class="section-label">Your Profile</p>
       <div style="display:flex; align-items:center; gap:var(--space-4); margin-top:var(--space-4);">
-        <div class="avatar avatar-lg" style="width:64px; height:64px; font-size:24px;">AT</div>
+        <div class="avatar avatar-lg" id="settings-avatar" style="width:64px; height:64px; font-size:24px;">AT</div>
         <div>
-          <p style="font-weight:600; font-size:18px; margin:0; color:var(--text-primary);">Alex Tan</p>
-          <p class="text-secondary" style="margin:4px 0 0 0;">Final-year CS student building in AI</p>
+          <p id="settings-name" style="font-weight:600; font-size:18px; margin:0; color:var(--text-primary);">Alex Tan</p>
+          <p id="settings-headline" class="text-secondary" style="margin:4px 0 0 0;">Final-year CS student building in AI</p>
         </div>
       </div>
     </div>
