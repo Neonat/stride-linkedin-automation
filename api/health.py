@@ -17,14 +17,14 @@ _NIM_URL              = "https://integrate.api.nvidia.com/v1/chat/completions"
 _DEFAULT_SAFETY_MODEL = "nvidia/nemotron-3-content-safety"
 
 
-def _try_agnes_key(api_key: str, model: str) -> dict:
+def _try_agnes_key(api_key: str, model: str, timeout: int = 15) -> dict:
     """Attempt a single Agnes key. Returns result dict."""
     try:
         resp = requests.post(
             _AGNES_URL,
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
             json={"model": model, "messages": [{"role": "user", "content": "Hi"}], "max_tokens": 5},
-            timeout=15,
+            timeout=timeout,
         )
         if resp.status_code in (200, 201):
             return {"ok": True, "model": model}
@@ -48,27 +48,33 @@ def _check_agnes() -> dict:
     if not primary_key and not backup_key:
         return {"ok": False, "error": "No Agnes keys set (AGNES_AI_TOKEN, AGNES_AI_TOKEN_2)"}
 
+    # Always test primary
     if primary_key:
-        result = _try_agnes_key(primary_key, model)
-        if result["ok"]:
-            return {**result, "key_used": "AGNES_AI_TOKEN"}
-        # Primary failed — note it and try backup
-        primary_error = result.get("error")
+        primary_result = _try_agnes_key(primary_key, model, timeout=5)
+        primary_status = "ok" if primary_result["ok"] else primary_result.get("error", "failed")
     else:
-        primary_error = "AGNES_AI_TOKEN not set"
+        primary_result = {"ok": False}
+        primary_status = "AGNES_AI_TOKEN not set"
 
+    # Always test backup
     if backup_key:
-        result = _try_agnes_key(backup_key, model)
-        if result["ok"]:
-            return {**result, "key_used": "AGNES_AI_TOKEN_2", "primary_error": primary_error}
-        return {
-            "ok": False,
-            "error": "Both keys failed",
-            "primary_error": primary_error,
-            "backup_error": result.get("error"),
-        }
+        backup_result = _try_agnes_key(backup_key, model)
+        backup_status = "ok" if backup_result["ok"] else backup_result.get("error", "failed")
+    else:
+        backup_result = {"ok": False}
+        backup_status = "AGNES_AI_TOKEN_2 not set"
 
-    return {"ok": False, "error": primary_error}
+    # Overall ok if either key works
+    overall_ok = primary_result["ok"] or backup_result["ok"]
+
+    return {
+        "ok":     overall_ok,
+        "model":  model,
+        "primary": "AGNES_AI_TOKEN",
+        "primary_status": primary_status,
+        "backup":  "AGNES_AI_TOKEN_2",
+        "backup_status":  backup_status,
+    }
 
 
 def _check_nemotron() -> dict:
@@ -124,29 +130,48 @@ def _check_supabase() -> dict:
 
 
 def _check_google_calendar(request_headers: dict) -> dict:
-    """
-    Checks the Google Calendar API using the provider_token passed
-    from the frontend as 'X-Google-Token'.
-    The token is obtained from supabase.auth.getSession().session.provider_token
-    on the client side and sent in the request header.
-    """
     token = request_headers.get("X-Google-Token") or request_headers.get("x-google-token")
     if not token:
         return {"ok": False, "error": "X-Google-Token header not provided"}
+
     try:
-        resp = requests.get(
-            "https://www.googleapis.com/calendar/v3/calendarList?maxResults=1",
+        # 1. Check token info — expiry + scopes
+        token_resp = requests.get(
+            f"https://oauth2.googleapis.com/tokeninfo?access_token={token}",
+            timeout=10,
+        )
+        if token_resp.status_code == 400:
+            return {"ok": False, "error": "Token invalid or expired — user must reconnect Google"}
+
+        token_info = token_resp.json()
+        expires_in = int(token_info.get("expires_in", 0))
+        scopes     = token_info.get("scope", "")
+        email      = token_info.get("email", "unknown")
+        has_calendar_scope = "calendar" in scopes
+
+        # 2. Fetch calendar list
+        cal_resp = requests.get(
+            "https://www.googleapis.com/calendar/v3/calendarList?maxResults=10",
             headers={"Authorization": f"Bearer {token}"},
             timeout=10,
         )
-        if resp.status_code == 200:
-            return {"ok": True}
-        if resp.status_code == 401:
-            return {"ok": False, "error": "Token expired or invalid — user must reconnect Google"}
-        return {"ok": False, "error": f"HTTP {resp.status_code}"}
+        if cal_resp.status_code != 200:
+            return {"ok": False, "error": f"Calendar API returned HTTP {cal_resp.status_code}"}
+
+        calendars = cal_resp.json().get("items", [])
+
+        return {
+            "ok":                 True,
+            "account":            email,
+            "calendars_found":    len(calendars),
+            "calendar_names":     [c.get("summary", "unnamed") for c in calendars],
+            "has_calendar_scope": has_calendar_scope,
+            "token_expires_in":   f"{expires_in}s" if expires_in > 0 else "unknown",
+            "token_expiring_soon": expires_in < 300,  # warn if under 5 mins
+        }
+
     except Exception as exc:
         return {"ok": False, "error": type(exc).__name__}
-
 
 class handler(BaseHTTPRequestHandler):
 
