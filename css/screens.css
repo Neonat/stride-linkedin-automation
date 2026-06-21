@@ -1382,8 +1382,9 @@ body:has(#screen-draft.active) #theme-toggle {
 ───────────────────────────────────────── */
 .login-split {
   display: flex;
-  min-height: 100vh;
+  height: 100%;
   width: 100%;
+  overflow: hidden;
 }
 
 .login-marquee-panel {
@@ -1455,4 +1456,20 @@ body:has(#screen-draft.active) #theme-toggle {
 
 @media (prefers-reduced-motion: reduce) {
   .scroll-up, .scroll-down, .scroll-up-slow { animation: none; }
+}
+
+/* ─────────────────────────────────────────
+   LOGIN — OAuth button connected states
+───────────────────────────────────────── */
+.btn-oauth.btn-connected {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+.btn-oauth.btn-connected::after {
+  content: '✓';
+  position: absolute;
+  right: var(--space-4);
+  font-size: 16px;
+  color: #27AE60;
 }

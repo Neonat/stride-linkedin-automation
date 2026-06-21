@@ -1581,56 +1581,122 @@ function updateUserUI(user) {
   if (collabName && fullName) collabName.textContent = fullName;
 }
 
-async function checkSessionAndRoute() {
-  const sb = await initSupabase();
-  if (!sb) {
-    showScreen("landing");
-    return;
-  }
+// ── Loading + reveal animation ─────────────────────────────────────────────
+async function playLoadingAndReveal(session) {
+  const overlay = document.getElementById('screen-loading');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  overlay.style.opacity = '1';
 
-  // Clear any stale non-Google sessions (wait 500 ms to let OAuth token arrive first)
-  const { data: { session: existingSession } } = await sb.auth.getSession();
-  if (existingSession && !existingSession.provider_token) {
-    await new Promise(r => setTimeout(r, 500));
-    const { data: { session: rechecked } } = await sb.auth.getSession();
-    if (rechecked && !rechecked.provider_token) {
-      await sb.auth.signOut();
+  const msgEl   = document.getElementById('loading-message');
+  const spinner  = document.getElementById('loading-spinner');
+  const allSet   = document.getElementById('loading-all-set');
+
+  const messages = [
+    'Persona initialising…',
+    'Analysing your pillars…',
+    'Calibrating your tone…',
+    'Mapping your career arc…',
+    'Syncing your calendar…',
+    'Building your momentum…',
+    'Taking the final step…',
+  ];
+
+  if (msgEl) {
+    for (const msg of messages) {
+      msgEl.style.opacity = '0';
+      await new Promise(r => setTimeout(r, 150));
+      msgEl.textContent = msg;
+      msgEl.style.opacity = '1';
+      await new Promise(r => setTimeout(r, 620));
     }
+    msgEl.style.display = 'none';
   }
+  if (spinner) spinner.style.display = 'none';
+  if (allSet)  allSet.style.display  = 'flex';
+  await new Promise(r => setTimeout(r, 1100));
 
-  const { data: { session } } = await sb.auth.getSession();
-  window._currentSession = session;
+  // Fade out overlay
+  overlay.style.transition = 'opacity 0.5s ease';
+  overlay.style.opacity = '0';
+  await new Promise(r => setTimeout(r, 500));
+  overlay.style.display = 'none';
+  // Reset for next time
+  if (msgEl)   { msgEl.style.display = ''; msgEl.textContent = ''; msgEl.style.opacity = '1'; }
+  if (spinner) spinner.style.display = '';
+  if (allSet)  allSet.style.display  = 'none';
+  overlay.style.transition = '';
+  overlay.style.opacity = '1';
 
-  if (session?.provider_token) {
-    updateUserUI(session.user);
-    const profile = await loadProfile();
-    if (profile) {
-      window._currentProfile = profile;
-      populateDashboard(profile, session);
-      loadCalendarEvents().then(events => {
-        renderCalendarEvents(events);
-        if (events !== null) {
-          const nudge = document.getElementById('gcal-nudge-card');
-          if (nudge) nudge.style.display = 'none';
-        }
-      });
-      loadUserPosts().then(posts => { window._linkedInPosts = posts; });
-      showScreen("home");
-    } else {
-      showScreen("onboarding");
-    }
-  } else if (session && !session.provider_token) {
-    await new Promise(r => setTimeout(r, 500));
-    const { data: { session: rechecked } } = await sb.auth.getSession();
-    if (rechecked && !rechecked.provider_token) await sb.auth.signOut();
-    showScreen("landing");
+  // Load user data then show app
+  updateUserUI(session.user);
+  const profile = await loadProfile();
+  if (profile) {
+    window._currentProfile = profile;
+    populateDashboard(profile, session);
+    loadCalendarEvents().then(events => {
+      renderCalendarEvents(events);
+      const nudge = document.getElementById('gcal-nudge-card');
+      if (nudge) nudge.style.display = 'none';
+    });
+    loadUserPosts().then(posts => { window._linkedInPosts = posts; });
+    showScreen('home');
   } else {
-    showScreen("landing");
+    showScreen('onboarding');
   }
+}
 
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === "SIGNED_IN" && session?.provider_token) {
-      window._currentSession = session;
+// ── Update login button connected states ───────────────────────────────────
+function updateLoginButtonStates({ hasGoogle, hasLinkedIn }) {
+  const gBtn  = document.getElementById('btn-google-signin');
+  const liBtn = document.getElementById('btn-linkedin-signin');
+  const gTxt  = document.getElementById('google-btn-text');
+  const liTxt = document.getElementById('linkedin-btn-text');
+  const sub   = document.getElementById('login-subtext');
+
+  if (gBtn && gTxt) {
+    if (hasGoogle) {
+      gBtn.classList.add('btn-connected');
+      gTxt.textContent = 'Google connected';
+    } else {
+      gBtn.classList.remove('btn-connected');
+      gTxt.textContent = 'Continue with Google';
+    }
+  }
+  if (liBtn && liTxt) {
+    if (hasLinkedIn) {
+      liBtn.classList.add('btn-connected');
+      liTxt.textContent = 'LinkedIn connected';
+    } else {
+      liBtn.classList.remove('btn-connected');
+      liTxt.textContent = 'Continue with LinkedIn';
+    }
+  }
+  if (sub) {
+    if (hasGoogle && !hasLinkedIn)
+      sub.textContent = 'Google connected ✓ — now connect LinkedIn to post directly.';
+    else if (hasLinkedIn && !hasGoogle)
+      sub.textContent = 'LinkedIn connected ✓ — now connect Google for Calendar access.';
+    else
+      sub.textContent = 'Connect Google for Calendar + LinkedIn to post directly.';
+  }
+}
+
+// ── Route after auth ────────────────────────────────────────────────────────
+async function _routeSession(session, { playLoading = false } = {}) {
+  window._currentSession = session;
+  if (!session) { showScreen('landing'); return; }
+
+  const identities  = session.user?.identities || [];
+  const hasGoogle   = identities.some(i => i.provider === 'google');
+  const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
+
+  if (hasGoogle && hasLinkedIn) {
+    if (playLoading) {
+      await playLoadingAndReveal(session);
+    } else {
+      // Returning visit already done loading - go straight to home/onboarding
+      updateUserUI(session.user);
       const profile = await loadProfile();
       if (profile) {
         window._currentProfile = profile;
@@ -1641,14 +1707,44 @@ async function checkSessionAndRoute() {
           if (nudge) nudge.style.display = 'none';
         });
         loadUserPosts().then(posts => { window._linkedInPosts = posts; });
-        showScreen("home");
+        showScreen('home');
       } else {
-        showScreen("onboarding");
+        showScreen('onboarding');
       }
     }
-    if (event === "SIGNED_OUT") {
+  } else {
+    updateLoginButtonStates({ hasGoogle, hasLinkedIn });
+    showScreen('login');
+  }
+}
+
+async function checkSessionAndRoute() {
+  const sb = await initSupabase();
+  if (!sb) { showScreen('landing'); return; }
+
+  const { data: { session } } = await sb.auth.getSession();
+  // Only route away from landing if there's an actual session
+  if (session) {
+    await _routeSession(session, { playLoading: false });
+  } else {
+    showScreen('landing');
+  }
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+      // After OAuth redirect — play loading animation on first full connection
+      const identities  = session?.user?.identities || [];
+      const hasGoogle   = identities.some(i => i.provider === 'google');
+      const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
+      const bothNowConnected = hasGoogle && hasLinkedIn;
+      // Only play loading anim if we were on login screen (partial → full connection)
+      const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
+      await _routeSession(session, { playLoading: bothNowConnected && wasOnLogin });
+    }
+    if (event === 'SIGNED_OUT') {
       window._currentSession = null;
-      showScreen("landing");
+      window._currentProfile = null;
+      showScreen('landing');
     }
   });
 }
@@ -2057,7 +2153,8 @@ function playIntroAnimation() {
 window._resetIntro = () => { localStorage.removeItem('stride-visited'); location.reload(); };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  if (!localStorage.getItem('stride-visited')) {
+  const isFirstVisit = !localStorage.getItem('stride-visited');
+  if (isFirstVisit) {
     localStorage.setItem('stride-visited', 'true');
     await playIntroAnimation();
   }
@@ -2104,31 +2201,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     showScreen('login');
   });
 
-  // Google sign-in
+  // Google sign-in (or link if already signed in with LinkedIn)
   document.getElementById('btn-google-signin')?.addEventListener('click', async () => {
     const sb = await initSupabase();
     if (!sb) return;
-    const { error } = await sb.auth.signInWithOAuth({
+    const { data: { session } } = await sb.auth.getSession();
+    const identities = session?.user?.identities || [];
+    if (identities.some(i => i.provider === 'google')) return; // Already connected
+    const opts = {
       provider: 'google',
       options: {
         scopes: 'https://www.googleapis.com/auth/calendar.readonly',
         redirectTo: 'https://linked-in-trail-blazer-hackathon.vercel.app',
       },
-    });
-    if (error) console.error(error.message);
+    };
+    const { error } = session
+      ? await sb.auth.linkIdentity(opts)
+      : await sb.auth.signInWithOAuth(opts);
+    if (error) console.error('Google auth error:', error.message);
   });
 
-  // LinkedIn sign-in
+  // LinkedIn sign-in (or link if already signed in with Google)
   document.getElementById('btn-linkedin-signin')?.addEventListener('click', async () => {
     const sb = await initSupabase();
     if (!sb) return;
-    const { error } = await sb.auth.signInWithOAuth({
+    const { data: { session } } = await sb.auth.getSession();
+    const identities = session?.user?.identities || [];
+    if (identities.some(i => i.provider === 'linkedin_oidc')) return; // Already connected
+    const opts = {
       provider: 'linkedin_oidc',
-      options: {
-        redirectTo: 'https://linked-in-trail-blazer-hackathon.vercel.app',
-      },
-    });
-    if (error) console.error(error.message);
+      options: { redirectTo: 'https://linked-in-trail-blazer-hackathon.vercel.app' },
+    };
+    const { error } = session
+      ? await sb.auth.linkIdentity(opts)
+      : await sb.auth.signInWithOAuth(opts);
+    if (error) console.error('LinkedIn auth error:', error.message);
   });
 
   // Export persona button
@@ -2151,5 +2258,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   })
 
-  checkSessionAndRoute();
+  if (isFirstVisit) {
+    showScreen('landing');
+    // Wire up auth state listener without routing (landing is shown)
+    const sb = await initSupabase();
+    if (sb) {
+      sb.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          const identities  = session?.user?.identities || [];
+          const hasGoogle   = identities.some(i => i.provider === 'google');
+          const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
+          const bothNowConnected = hasGoogle && hasLinkedIn;
+          const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
+          await _routeSession(session, { playLoading: bothNowConnected && wasOnLogin });
+        }
+        if (event === 'SIGNED_OUT') {
+          window._currentSession = null;
+          window._currentProfile = null;
+          showScreen('landing');
+        }
+      });
+    }
+  } else {
+    checkSessionAndRoute();
+  }
 });
