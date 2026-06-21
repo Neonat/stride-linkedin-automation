@@ -1700,12 +1700,14 @@ function updateLoginButtonStates({ hasGoogle, hasLinkedIn }) {
     }
   }
   if (sub) {
-    if (hasGoogle && !hasLinkedIn)
-      sub.textContent = 'Google connected ✓ — now connect LinkedIn to post directly.';
-    else if (hasLinkedIn && !hasGoogle)
-      sub.textContent = 'LinkedIn connected ✓ — now connect Google for Calendar access.';
+    if (hasGoogle && hasLinkedIn)
+      sub.textContent = 'Both connected ✓ — signing you in…';
+    else if (hasGoogle)
+      sub.textContent = 'Google connected ✓ — signing you in…';
+    else if (hasLinkedIn)
+      sub.textContent = 'LinkedIn connected ✓ — signing you in…';
     else
-      sub.textContent = 'Connect Google for Calendar + LinkedIn to post directly.';
+      sub.textContent = 'Sign in with Google or LinkedIn to continue.';
   }
 }
 
@@ -1718,7 +1720,7 @@ async function _routeSession(session, { playLoading = false } = {}) {
   const hasGoogle   = identities.some(i => i.provider === 'google');
   const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
 
-  if (hasGoogle && hasLinkedIn) {
+  if (hasGoogle || hasLinkedIn) {
     if (playLoading) {
       await playLoadingAndReveal(session);
     } else {
@@ -1752,13 +1754,17 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     if (forceLogin) {
-      // Returning from OAuth redirect — always show login screen so the user
-      // can confirm / connect the second provider before entering the app
+      // Returning from OAuth redirect — flash login screen showing which provider
+      // connected, then auto-proceed after 1.5s (no second provider required)
       const identities  = session.user?.identities || [];
       const hasGoogle   = identities.some(i => i.provider === 'google');
       const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
       updateLoginButtonStates({ hasGoogle, hasLinkedIn });
       showScreen('login');
+      if (hasGoogle || hasLinkedIn) {
+        setTimeout(() => _routeSession(session, { playLoading: true }), 1500);
+        return; // skip wiring onAuthStateChange — we're about to proceed
+      }
     } else {
       await _routeSession(session, { playLoading: false });
     }
@@ -1768,14 +1774,12 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
 
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-      // After OAuth redirect — play loading animation on first full connection
       const identities  = session?.user?.identities || [];
       const hasGoogle   = identities.some(i => i.provider === 'google');
       const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
-      const bothNowConnected = hasGoogle && hasLinkedIn;
-      // Only play loading anim if we were on login screen (partial → full connection)
+      const anyConnected = hasGoogle || hasLinkedIn;
       const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
-      await _routeSession(session, { playLoading: bothNowConnected && wasOnLogin });
+      await _routeSession(session, { playLoading: anyConnected && wasOnLogin });
     }
     if (event === 'SIGNED_OUT') {
       window._currentSession = null;
@@ -2253,9 +2257,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
     };
     localStorage.setItem('stride-oauth-pending', '1');
-    const { error } = session
-      ? await sb.auth.linkIdentity(opts)
-      : await sb.auth.signInWithOAuth(opts);
+    const { error } = await sb.auth.signInWithOAuth(opts);
     if (error) {
       console.error('Google auth error:', error.message);
       const sub = document.getElementById('login-subtext');
@@ -2279,9 +2281,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       options: { redirectTo: window.location.origin },
     };
     localStorage.setItem('stride-oauth-pending', '1');
-    const { error } = session
-      ? await sb.auth.linkIdentity(opts)
-      : await sb.auth.signInWithOAuth(opts);
+    const { error } = await sb.auth.signInWithOAuth(opts);
     if (error) {
       console.error('LinkedIn auth error:', error.message);
       const sub = document.getElementById('login-subtext');
@@ -2309,6 +2309,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   })
 
+  // "Try a demo version" — skip onboarding, go straight to home dashboard
+  document.getElementById('btn-try-demo')?.addEventListener('click', () => {
+    showScreen('home');
+  });
+
   // "Replay animation" button on landing hero — call directly since the
   // stride-replay listener is removed when the intro animation finishes
   document.getElementById('btn-replay-anim')?.addEventListener('click', () => {
@@ -2325,9 +2330,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           const identities  = session?.user?.identities || [];
           const hasGoogle   = identities.some(i => i.provider === 'google');
           const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
-          const bothNowConnected = hasGoogle && hasLinkedIn;
+          const anyConnected = hasGoogle || hasLinkedIn;
           const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
-          await _routeSession(session, { playLoading: bothNowConnected && wasOnLogin });
+          await _routeSession(session, { playLoading: anyConnected && wasOnLogin });
         }
         if (event === 'SIGNED_OUT') {
           window._currentSession = null;
