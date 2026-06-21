@@ -1216,7 +1216,7 @@ const Connect = (() => {
         provider: "google",
         options: {
           scopes: "https://www.googleapis.com/auth/calendar.readonly",
-          redirectTo: "https://linked-in-trail-blazer-hackathon.vercel.app",
+          redirectTo: window.location.origin,
         },
       });
       if (error) console.error(error.message);
@@ -2240,30 +2240,42 @@ document.addEventListener("DOMContentLoaded", async () => {
       provider: 'google',
       options: {
         scopes: 'https://www.googleapis.com/auth/calendar.readonly',
-        redirectTo: 'https://linked-in-trail-blazer-hackathon.vercel.app',
+        redirectTo: window.location.origin,
       },
     };
     const { error } = session
       ? await sb.auth.linkIdentity(opts)
       : await sb.auth.signInWithOAuth(opts);
-    if (error) console.error('Google auth error:', error.message);
+    if (error) {
+      console.error('Google auth error:', error.message);
+      const sub = document.getElementById('login-subtext');
+      if (sub) sub.textContent = 'Google sign-in failed: ' + error.message;
+    }
   });
 
   // LinkedIn sign-in (or link if already signed in with Google)
   document.getElementById('btn-linkedin-signin')?.addEventListener('click', async () => {
     const sb = await initSupabase();
-    if (!sb) return;
+    if (!sb) {
+      const sub = document.getElementById('login-subtext');
+      if (sub) sub.textContent = 'Could not connect to server. Please try again.';
+      return;
+    }
     const { data: { session } } = await sb.auth.getSession();
     const identities = session?.user?.identities || [];
     if (identities.some(i => i.provider === 'linkedin_oidc')) return; // Already connected
     const opts = {
       provider: 'linkedin_oidc',
-      options: { redirectTo: 'https://linked-in-trail-blazer-hackathon.vercel.app' },
+      options: { redirectTo: window.location.origin },
     };
     const { error } = session
       ? await sb.auth.linkIdentity(opts)
       : await sb.auth.signInWithOAuth(opts);
-    if (error) console.error('LinkedIn auth error:', error.message);
+    if (error) {
+      console.error('LinkedIn auth error:', error.message);
+      const sub = document.getElementById('login-subtext');
+      if (sub) sub.textContent = 'LinkedIn sign-in failed: ' + error.message;
+    }
   });
 
   // Export persona button
