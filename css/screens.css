@@ -1,11 +1,18 @@
 /* Stride — Per-Screen Layout */
 
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
 /* ─────────────────────────────────────────
    SCREEN SHELL
 ───────────────────────────────────────── */
 .screen {
   display: none;
   min-height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .screen.active { display: block; }
 
@@ -469,6 +476,18 @@ body.on-landing .bg-blobs { display: none; }
   }
 }
 
+@media (max-width: 768px) {
+  .home-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+  .home-grid-main,
+  .home-grid-side {
+    width: 100%;
+  }
+}
+
 .home-grid-side {
   display: flex;
   flex-direction: column;
@@ -850,18 +869,12 @@ body.on-landing .bg-blobs { display: none; }
 .draft-sticky-bar {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: var(--dashboard-w);
-  background: var(--glass-surface-strong);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--color-background-primary);
+  padding: var(--space-3) var(--space-4);
+  border-top: 0.5px solid var(--border-default);
 }
 
 @media (min-width: 600px) {

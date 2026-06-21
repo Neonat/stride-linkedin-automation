@@ -390,14 +390,6 @@ Stride helps you share it.</h1>
 
     <div class="home-grid">
 
-      <!-- Success banner (shown on return from LinkedIn) -->
-      <div id="success-banner" class="card home-section" style="display:none; border: 1px solid var(--color-green); background: transparent; text-align:center; padding: var(--space-6);">
-        <p style="font-size:24px; margin-bottom:var(--space-2);">🎉</p>
-        <p class="text-h3" style="margin-bottom:var(--space-1);">You did it!</p>
-        <p class="text-body text-secondary" style="margin-bottom:var(--space-4);">Your post is live. Keep the momentum going.</p>
-        <button class="btn btn-ghost btn-inline" id="btn-dismiss-success" style="font-size:13px;">Dismiss</button>
-      </div>
-
       <!-- Profile hero card -->
       <div class="card home-section" style="grid-column:1/-1; display:flex; align-items:center; gap:var(--space-4); flex-wrap:wrap;">
         <div class="avatar avatar-lg" id="profile-hero-avatar" style="width:56px;height:56px;font-size:20px;flex-shrink:0;">AT</div>
@@ -501,7 +493,7 @@ Stride helps you share it.</h1>
         </div>
 
         <!-- Capture a moment -->
-        <div class="card" style="overflow-y:auto; max-height:300px; -webkit-overflow-scrolling:touch;">
+        <div class="card" style="overflow-y:auto; max-height:320px; -webkit-overflow-scrolling:touch;">
           <p class="section-label">Grow your persona</p>
           <p class="text-small text-secondary" style="margin-bottom:var(--space-4);">Log what happened. Stride learns from every moment you capture.</p>
           <button class="btn btn-primary" id="btn-capture-moment">
@@ -591,7 +583,7 @@ Stride helps you share it.</h1>
     <span class="chip chip-community" style="font-size:11px;padding:2px 8px;">Community</span>
   </nav>
 
-  <div class="mobile-wrap wrap-dashboard" style="padding-bottom:100px;">
+  <div class="mobile-wrap wrap-dashboard" style="padding-bottom:120px;">
 
     <div class="draft-grid">
 
@@ -1451,5 +1443,16 @@ Stride helps you share it.</h1>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script src="js/app.js?v=2"></script>
+
+<!-- Success modal -->
+<div id="success-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center;">
+  <div style="background:var(--color-background-primary); border-radius:var(--border-radius-lg); padding:var(--space-8); max-width:360px; width:90%; text-align:center; position:relative;">
+    <p style="font-size:48px; margin:0 0 var(--space-3);">🎉</p>
+    <p class="text-h2" style="margin-bottom:var(--space-2);">You did it!</p>
+    <p class="text-body text-secondary" style="margin-bottom:var(--space-2);">Your post is live on LinkedIn.</p>
+    <p class="text-caption text-muted" style="margin-bottom:var(--space-6);">Keep the momentum going — your streak is still alive.</p>
+    <button class="btn btn-primary" id="btn-success-dismiss" style="width:100%;">Back to dashboard</button>
+  </div>
+</div>
 </body>
 </html>

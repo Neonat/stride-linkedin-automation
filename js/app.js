@@ -135,7 +135,7 @@ function showScreen(id) {
   // Handle global navbar visibility and active tabs
   const globalNav = document.getElementById("global-nav");
   if (globalNav) {
-    const navScreens = ["home", "posts", "collab", "settings"];
+    const navScreens = ["home", "posts", "collab", "settings", "draft", "published", "nudge"];
     if (navScreens.includes(id)) {
       globalNav.style.display = "flex";
       globalNav.querySelectorAll(".nav-tab").forEach(tab => {
@@ -1642,6 +1642,28 @@ async function checkSessionAndRoute() {
 /* ─────────────────────────────────────────
    BOOT
 ───────────────────────────────────────── */
+function showSuccessModal() {
+  const overlay = document.getElementById('success-modal-overlay')
+  if (overlay) overlay.style.display = 'flex'
+
+  const colors = ['#1A5F8A', '#27AE60', '#EF9F27', '#ffffff', '#E24B4A', '#7F77DD']
+
+  confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, colors })
+
+  setTimeout(() => {
+    confetti({ particleCount: 120, angle: 60, spread: 70, origin: { x: 0, y: 0.6 }, colors })
+    confetti({ particleCount: 120, angle: 120, spread: 70, origin: { x: 1, y: 0.6 }, colors })
+  }, 300)
+
+  setTimeout(() => {
+    confetti({ particleCount: 80, spread: 120, origin: { y: 0.3 }, colors, scalar: 1.4 })
+  }, 700)
+
+  setTimeout(() => {
+    confetti({ particleCount: 60, spread: 80, origin: { y: 0.6 }, colors })
+  }, 1100)
+}
+
 function setLastPostUrl(url) {
   sessionStorage.setItem('stride-last-post-url', url || 'https://www.linkedin.com/feed/')
 }
@@ -1664,29 +1686,16 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionStorage.setItem('stride-show-confetti', 'true')
   })
 
-  // Fire confetti and show success banner on return from LinkedIn
+  // Fire confetti modal on return from LinkedIn
   if (sessionStorage.getItem('stride-show-confetti') === 'true') {
     sessionStorage.removeItem('stride-show-confetti')
-    const banner = document.getElementById('success-banner')
-    if (banner) banner.style.display = 'block'
-    setTimeout(() => {
-      confetti({
-        particleCount: 180,
-        spread: 80,
-        origin: { y: 0.5 },
-        colors: ['#1A5F8A', '#27AE60', '#EF9F27', '#ffffff']
-      })
-      setTimeout(() => {
-        confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0 } })
-        confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1 } })
-      }, 400)
-    }, 300)
+    setTimeout(showSuccessModal, 400)
   }
 
-  // Dismiss success banner
-  document.getElementById('btn-dismiss-success')?.addEventListener('click', () => {
-    const banner = document.getElementById('success-banner')
-    if (banner) banner.style.display = 'none'
+  // Dismiss success modal
+  document.getElementById('btn-success-dismiss')?.addEventListener('click', () => {
+    const overlay = document.getElementById('success-modal-overlay')
+    if (overlay) overlay.style.display = 'none'
   })
 
   checkSessionAndRoute();
