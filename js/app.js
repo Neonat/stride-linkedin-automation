@@ -131,6 +131,9 @@ function showScreen(id) {
   if (id === "admin") {
     loadLinkedInStats();
   }
+  if (id === "posts") {
+    populatePostsScreen();
+  }
 
   // Handle global navbar visibility and active tabs
   const globalNav = document.getElementById("global-nav");
@@ -872,6 +875,8 @@ async function publishToLinkedIn(btn) {
     }
 
     // ── Step 3: Success ───────────────────────────────────────────────────
+    const pillar = document.querySelector('#screen-draft .chip.selected')?.textContent?.trim() || 'General';
+    savePostToSupabase(text, pillar);
     setLastPostUrl(pubData.postUrl || '');
     showScreen("published");
     setTimeout(runPublishedAnimation, 100);
@@ -1612,6 +1617,7 @@ async function checkSessionAndRoute() {
     updateUserUI(session.user);
     const profile = await loadProfile();
     if (profile) {
+      window._currentProfile = profile;
       populateDashboard(profile, session);
       showScreen("home");
     } else if (localStorage.getItem("stride-onboarded") === "true") {
@@ -1627,6 +1633,7 @@ async function checkSessionAndRoute() {
     if (event === "SIGNED_IN" && session?.provider_token) {
       const profile = await loadProfile();
       if (profile) {
+        window._currentProfile = profile;
         populateDashboard(profile, session);
         showScreen("home");
       } else {
@@ -1642,6 +1649,96 @@ async function checkSessionAndRoute() {
 /* ─────────────────────────────────────────
    BOOT
 ───────────────────────────────────────── */
+async function savePostToSupabase(postText, pillar) {
+  if (!strideSupabase) return;
+  const { data: { session } } = await strideSupabase.auth.getSession();
+  if (!session) return;
+  await strideSupabase.from('posts').insert({
+    user_id: session.user.id,
+    text: postText,
+    pillar: pillar || 'General',
+    created_at: new Date().toISOString(),
+    likes: 0, comments: 0, shares: 0,
+  });
+}
+
+async function loadUserPosts() {
+  if (!strideSupabase) return [];
+  const { data: { session } } = await strideSupabase.auth.getSession();
+  if (!session) return [];
+  const { data, error } = await strideSupabase
+    .from('posts').select('*')
+    .eq('user_id', session.user.id)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('loadUserPosts:', error.message); return []; }
+  return data || [];
+}
+
+async function populatePostsScreen() {
+  const container = document.getElementById('posts-list');
+  if (!container) return;
+  const posts = await loadUserPosts();
+  if (!posts.length) {
+    container.innerHTML = '<p class="text-body text-muted" style="text-align:center;padding:var(--space-8);">No posts yet — publish your first one!</p>';
+    return;
+  }
+  container.innerHTML = posts.map(post => {
+    const date = new Date(post.created_at).toLocaleDateString('en-SG', { month: 'short', day: 'numeric' });
+    const preview = (post.text || '').slice(0, 200) + ((post.text || '').length > 200 ? '...' : '');
+    return `
+      <div class="card" style="margin-bottom:var(--space-4);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-3);">
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div class="avatar">AT</div>
+            <div>
+              <p style="font-weight:600;font-size:14px;margin:0;">You</p>
+              <p class="text-caption text-muted" style="margin:0;">${date}</p>
+            </div>
+          </div>
+          <span class="chip chip-${(post.pillar||'technical').toLowerCase()}" style="font-size:11px;padding:2px 8px;">${post.pillar||'General'}</span>
+        </div>
+        <p style="font-size:14px;line-height:1.5;margin-bottom:var(--space-4);">${preview}</p>
+        <div style="display:flex;gap:var(--space-6);color:var(--text-muted);font-size:13px;font-weight:500;">
+          <span>👍 ${post.likes||0}</span><span>💬 ${post.comments||0}</span><span>↗ ${post.shares||0}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function buildPersonaPrompt(profile) {
+  const name = profile.full_name || 'Me';
+  const role = profile.role || '';
+  const field = Array.isArray(profile.field) ? profile.field.join(', ') : (profile.field || '');
+  const goals = Array.isArray(profile.goals) ? profile.goals.join(', ') : (profile.goals || '');
+  const tone = Array.isArray(profile.tone) ? profile.tone.join(', ') : (profile.tone || '');
+  const pillars = Array.isArray(profile.pillars) ? profile.pillars.join(', ') : (profile.pillars || '');
+  const positioning = profile.positioning || '';
+  return `You are a personal brand writing assistant for ${name}.
+
+ABOUT ME:
+${positioning}
+
+ROLE: ${role}
+FIELD / ASPIRATIONS: ${field}
+GOALS: ${goals}
+
+MY CONTENT PILLARS:
+${pillars}
+
+MY TONE OF VOICE:
+${tone}
+
+INSTRUCTIONS:
+- Write all content in first person, as if I am speaking
+- Match my tone: ${tone}
+- Every post should connect to at least one of my pillars: ${pillars}
+- Avoid corporate buzzwords, AI-speak, or anything that sounds generic
+- Posts should feel personal, specific, and like something I would actually say
+- LinkedIn post format: hook (1-2 lines) → story (3-5 bullet points or short paragraphs) → call to action
+
+When I give you a topic or event, draft a LinkedIn post in my voice.`.trim();
+}
+
 function showSuccessModal() {
   const overlay = document.getElementById('success-modal-overlay')
   if (overlay) overlay.style.display = 'flex'
@@ -1696,6 +1793,26 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById('btn-success-dismiss')?.addEventListener('click', () => {
     const overlay = document.getElementById('success-modal-overlay')
     if (overlay) overlay.style.display = 'none'
+  })
+
+  // Export persona button
+  document.getElementById('btn-export-persona')?.addEventListener('click', async () => {
+    const feedback = document.getElementById('export-persona-feedback');
+    const profile = window._currentProfile;
+    if (!profile) {
+      if (feedback) feedback.textContent = 'No profile found — complete onboarding first.';
+      return;
+    }
+    const prompt = buildPersonaPrompt(profile);
+    try {
+      await navigator.clipboard.writeText(prompt);
+      if (feedback) { feedback.textContent = '✓ Copied! Paste it into Claude or ChatGPT.'; setTimeout(() => { feedback.textContent = ''; }, 3000); }
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = prompt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      if (feedback) { feedback.textContent = '✓ Copied!'; setTimeout(() => { feedback.textContent = ''; }, 3000); }
+    }
   })
 
   checkSessionAndRoute();

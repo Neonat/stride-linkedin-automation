@@ -858,53 +858,7 @@ Stride helps you share it.</h1>
   <div class="mobile-wrap wrap-dashboard" style="padding-top: var(--space-6);">
     <p class="text-h3" style="margin-bottom:var(--space-6);">Past Posts</p>
     
-    <div style="display:flex; flex-direction:column; gap:var(--space-6);">
-      
-      <!-- Mock Post 1 -->
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--space-4);">
-          <div style="display:flex; align-items:center; gap:var(--space-3);">
-            <div class="avatar">AT</div>
-            <div>
-              <p style="font-weight:600; font-size:14px; margin:0;">Alex Tan</p>
-              <p class="text-caption text-muted" style="margin:0;">1 week ago</p>
-            </div>
-          </div>
-          <span class="chip chip-technical" style="font-size:11px;padding:2px 8px;">Technical</span>
-        </div>
-        <p style="font-size:14px; line-height:1.5; margin-bottom:var(--space-4);">
-          The best technical solutions aren't the most complex — they're the ones that solve a real human problem in the simplest possible way. Last week our team built a dashboard that cut food waste by 30%...
-        </p>
-        <div style="display:flex; gap:var(--space-6); color:var(--text-muted); font-size:13px; font-weight:500;">
-          <span style="display:flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg> 112</span>
-          <span style="display:flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> 14</span>
-          <span style="display:flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 1,024</span>
-        </div>
-      </div>
-
-      <!-- Mock Post 2 -->
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--space-4);">
-          <div style="display:flex; align-items:center; gap:var(--space-3);">
-            <div class="avatar">AT</div>
-            <div>
-              <p style="font-weight:600; font-size:14px; margin:0;">Alex Tan</p>
-              <p class="text-caption text-muted" style="margin:0;">3 weeks ago</p>
-            </div>
-          </div>
-          <span class="chip chip-community" style="font-size:11px;padding:2px 8px;">Community</span>
-        </div>
-        <p style="font-size:14px; line-height:1.5; margin-bottom:var(--space-4);">
-          Just wrapped up organizing our first campus developer meetup! It’s amazing what happens when you get 50 builders in a room with pizza and some APIs. Huge thanks to everyone who showed up and shared their projects.
-        </p>
-        <div style="display:flex; gap:var(--space-6); color:var(--text-muted); font-size:13px; font-weight:500;">
-          <span style="display:flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg> 89</span>
-          <span style="display:flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> 8</span>
-          <span style="display:flex; align-items:center; gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg> 740</span>
-        </div>
-      </div>
-
-    </div>
+    <div id="posts-list"></div>
   </div>
 </section>
 
@@ -940,6 +894,13 @@ Stride helps you share it.</h1>
         <span class="chip chip-leadership" style="pointer-events:none;">Leadership</span>
         <span class="chip chip-community" style="pointer-events:none;">Community</span>
       </div>
+    </div>
+
+    <div class="card" style="margin-bottom:var(--space-6);">
+      <p class="section-label">Export your persona</p>
+      <p class="text-caption text-muted" style="margin:var(--space-2) 0 var(--space-4);">Copy your persona prompt to use in ChatGPT, Claude, or any AI tool to generate on-brand content.</p>
+      <button class="btn btn-secondary" id="btn-export-persona" style="width:100%;">Copy persona prompt</button>
+      <p id="export-persona-feedback" class="text-caption text-muted" style="text-align:center;margin-top:var(--space-2);min-height:1.2em;"></p>
     </div>
 
     <div class="card" style="margin-bottom:var(--space-6);">
@@ -1027,7 +988,7 @@ Stride helps you share it.</h1>
     </div>
 
     <!-- LinkedIn account card -->
-    <div class="card" id="admin-linkedin-card" style="margin-bottom:var(--space-6);">
+    <div class="card" id="admin-linkedin-card" style="display:none; margin-bottom:var(--space-6);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4);">
         <p class="text-h3" style="margin:0;">LinkedIn Account</p>
         <button class="btn btn-secondary btn-inline" id="btn-refresh-linkedin" style="width:auto; font-size:13px;">Refresh</button>
