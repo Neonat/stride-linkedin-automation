@@ -1105,6 +1105,65 @@ body:has(#screen-draft.active) #theme-toggle {
 }
 
 /* ─────────────────────────────────────────
+   SCREEN — COLLAB ENTRY
+───────────────────────────────────────── */
+#screen-collab-entry { background: transparent; }
+
+.collab-qr-box {
+  display: inline-block;
+  padding: 16px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--space-4);
+}
+.collab-qr-svg {
+  width: 160px;
+  height: 160px;
+  display: block;
+}
+.collab-room-code {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-mono, 'Courier New', monospace);
+}
+.collab-keyword-badge {
+  display: inline-block;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-default);
+  border-radius: 14px;
+  padding: 18px 32px;
+  margin-bottom: var(--space-4);
+  font-family: var(--font-mono, 'Courier New', monospace);
+  color: var(--text-primary);
+}
+.collab-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.collab-waiting-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-stride-blue, #1746C8);
+  animation: collabPulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes collabPulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.75); }
+  50%       { opacity: 1;    transform: scale(1);    }
+}
+
+/* ─────────────────────────────────────────
    SCREEN 6 — COLLAB
 ───────────────────────────────────────── */
 #screen-collab {

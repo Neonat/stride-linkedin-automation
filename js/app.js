@@ -138,15 +138,23 @@ function showScreen(id) {
   // Handle global navbar visibility and active tabs
   const globalNav = document.getElementById("global-nav");
   if (globalNav) {
-    const navScreens = ["home", "posts", "collab", "settings", "draft", "published", "nudge"];
+    const navScreens = ["home", "posts", "collab", "collab-entry", "settings", "draft", "published", "nudge"];
     if (navScreens.includes(id)) {
       globalNav.style.display = "flex";
+      // collab and collab-entry both highlight the Collab tab (data-goto="collab-entry")
+      const tabId = id === "collab" ? "collab-entry" : id;
       globalNav.querySelectorAll(".nav-tab").forEach(tab => {
-        tab.classList.toggle("active", tab.dataset.goto === id);
+        tab.classList.toggle("active", tab.dataset.goto === tabId);
       });
     } else {
       globalNav.style.display = "none";
     }
+  }
+  // Reset collab entry to default state on each visit
+  if (id === "collab-entry") {
+    document.getElementById("collab-entry-default")?.style.setProperty("display", "");
+    document.getElementById("collab-entry-qr")?.style.setProperty("display", "none");
+    document.getElementById("collab-entry-kw")?.style.setProperty("display", "none");
   }
   // Connect screen has real backend — initialise on every visit
   if (id === "connect") Connect.init();
@@ -883,6 +891,42 @@ async function publishToLinkedIn(btn) {
     btn.innerHTML = originalHtml;
     btn.disabled = false;
   }
+}
+
+function wireCollabEntry() {
+  const _adjWords = ["swift","tiger","azure","bright","coral","ember","frost","golden","jade","lunar"];
+  const _nounWords = ["launch","signal","spark","pilot","stream","bridge","summit","orbit","forge","crest"];
+
+  function genRoomCode() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+  function genKeyword() {
+    const a = _adjWords[Math.floor(Math.random() * _adjWords.length)];
+    const n = _nounWords[Math.floor(Math.random() * _nounWords.length)];
+    return `${a}-${n}`;
+  }
+
+  document.getElementById("btn-collab-qr")?.addEventListener("click", () => {
+    document.getElementById("collab-room-code").textContent = genRoomCode();
+    document.getElementById("collab-entry-default").style.display = "none";
+    document.getElementById("collab-entry-qr").style.display = "";
+    document.getElementById("collab-entry-kw").style.display = "none";
+  });
+
+  document.getElementById("btn-collab-keyword")?.addEventListener("click", () => {
+    document.getElementById("collab-keyword").textContent = genKeyword();
+    document.getElementById("collab-entry-default").style.display = "none";
+    document.getElementById("collab-entry-qr").style.display = "none";
+    document.getElementById("collab-entry-kw").style.display = "";
+  });
+
+  const backToDefault = () => {
+    document.getElementById("collab-entry-default").style.display = "";
+    document.getElementById("collab-entry-qr").style.display = "none";
+    document.getElementById("collab-entry-kw").style.display = "none";
+  };
+  document.getElementById("btn-collab-qr-back")?.addEventListener("click", backToDefault);
+  document.getElementById("btn-collab-kw-back")?.addEventListener("click", backToDefault);
 }
 
 function wireButtons() {
@@ -2208,7 +2252,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   initThemeToggle();
   initMomentModal();
   wireButtons();
+  wireCollabEntry();
   document.getElementById("btn-refresh-linkedin")?.addEventListener("click", loadLinkedInStats);
+  document.getElementById("btn-open-streak")?.addEventListener("click", () => {
+    window.open("https://calendar.google.com", "_blank", "noopener,noreferrer");
+  });
 
   // Wire "See my post" button on published screen
   document.getElementById('btn-see-post')?.addEventListener('click', () => {

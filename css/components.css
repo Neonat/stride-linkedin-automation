@@ -226,6 +226,19 @@ body {
 }
 
 /* ─────────────────────────────────────────
+   GLOBAL NAV BAR
+───────────────────────────────────────── */
+#global-nav {
+  background: rgba(255,255,255,0.84);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+[data-theme="dark"] #global-nav {
+  background: rgba(15,19,23,0.92);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+/* ─────────────────────────────────────────
    NAVIGATION TABS
 ───────────────────────────────────────── */
 .tabs-container {
@@ -236,16 +249,19 @@ body {
   border-radius: var(--radius-full);
 }
 [data-theme="dark"] .tabs-container {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 .nav-tab {
   padding: 6px 16px;
   border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-decoration: none;
   transition: all 0.2s ease;
+}
+[data-theme="dark"] .nav-tab {
+  color: #8FA3B8;
 }
 .nav-tab:hover {
   color: var(--text-primary);
@@ -257,8 +273,9 @@ body {
   font-weight: 600;
 }
 [data-theme="dark"] .nav-tab.active {
-  background: var(--surface-card);
-  color: #fff;
+  background: rgba(255,255,255,0.13);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
 }
 
 /* ─────────────────────────────────────────
