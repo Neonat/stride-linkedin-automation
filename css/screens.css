@@ -1109,6 +1109,101 @@ body:has(#screen-draft.active) #theme-toggle {
 ───────────────────────────────────────── */
 #screen-collab-entry { background: transparent; }
 
+/* Option buttons on entry default screen */
+.collab-option-btn {
+  align-items: center;
+  justify-content: flex-start;
+  height: auto;
+  padding: 14px 18px;
+  gap: 12px;
+}
+.collab-option-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.collab-option-label { font-size: 15px; font-weight: 600; }
+.collab-option-sub   { font-size: 12px; font-weight: 400; opacity: 0.72; }
+
+/* Proximity / remote chips */
+.collab-method-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: var(--space-4);
+  margin-top: var(--space-1);
+}
+.chip-proximity {
+  background: rgba(23,70,200,0.10);
+  color: #1746C8;
+}
+[data-theme="dark"] .chip-proximity {
+  background: rgba(91,163,208,0.15);
+  color: #5BA3D0;
+}
+.chip-remote {
+  background: rgba(39,174,96,0.10);
+  color: #1E8449;
+}
+[data-theme="dark"] .chip-remote {
+  background: rgba(39,174,96,0.15);
+  color: #5dcb89;
+}
+
+/* QR countdown */
+.collab-ttl-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.collab-ttl-label { font-size: 12px; }
+.collab-ttl-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono, 'Courier New', monospace);
+  color: var(--text-primary);
+  transition: color 0.4s ease;
+  min-width: 2.6ch;
+}
+.collab-ttl-urgent { color: #E53E3E !important; }
+
+/* Expired state */
+.collab-expired-msg {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-3);
+}
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: var(--color-stride-blue, #1746C8);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.collab-qr-box.collab-qr-expired {
+  opacity: 0.25;
+  filter: grayscale(1);
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+/* Keyword expiry line */
+.collab-kw-expiry {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 var(--space-3);
+}
+
 .collab-qr-box {
   display: inline-block;
   padding: 16px;

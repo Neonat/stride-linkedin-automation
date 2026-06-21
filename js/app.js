@@ -150,7 +150,8 @@ function showScreen(id) {
       globalNav.style.display = "none";
     }
   }
-  // Reset collab entry to default state on each visit
+  // Reset collab entry to default state on each visit; stop any running QR timer
+  _stopCollabQrTimer();
   if (id === "collab-entry") {
     document.getElementById("collab-entry-default")?.style.setProperty("display", "");
     document.getElementById("collab-entry-qr")?.style.setProperty("display", "none");
@@ -893,6 +894,12 @@ async function publishToLinkedIn(btn) {
   }
 }
 
+let _collabQrTimer = null;
+
+function _stopCollabQrTimer() {
+  if (_collabQrTimer) { clearInterval(_collabQrTimer); _collabQrTimer = null; }
+}
+
 function wireCollabEntry() {
   const _adjWords = ["swift","tiger","azure","bright","coral","ember","frost","golden","jade","lunar"];
   const _nounWords = ["launch","signal","spark","pilot","stream","bridge","summit","orbit","forge","crest"];
@@ -906,24 +913,84 @@ function wireCollabEntry() {
     return `${a}-${n}`;
   }
 
-  document.getElementById("btn-collab-qr")?.addEventListener("click", () => {
-    document.getElementById("collab-room-code").textContent = genRoomCode();
+  function startQrCountdown() {
+    _stopCollabQrTimer();
+    let secs = 3 * 60;
+    const cdEl   = document.getElementById("collab-qr-countdown");
+    const ttlRow = document.getElementById("collab-qr-ttl-row");
+    const waitEl = document.getElementById("collab-qr-waiting");
+    const expEl  = document.getElementById("collab-qr-expired");
+    const qrBox  = document.getElementById("collab-qr-box");
+
+    function fmt(s) {
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    }
+    function tick() {
+      secs--;
+      if (secs <= 0) {
+        _stopCollabQrTimer();
+        if (cdEl)   { cdEl.textContent = "0:00"; cdEl.classList.add("collab-ttl-urgent"); }
+        if (ttlRow) ttlRow.style.display = "none";
+        if (waitEl) waitEl.style.display = "none";
+        if (expEl)  expEl.style.display  = "";
+        if (qrBox)  qrBox.classList.add("collab-qr-expired");
+        return;
+      }
+      if (cdEl) {
+        cdEl.textContent = fmt(secs);
+        cdEl.classList.toggle("collab-ttl-urgent", secs < 30);
+      }
+    }
+    if (cdEl) { cdEl.textContent = fmt(secs); cdEl.classList.remove("collab-ttl-urgent"); }
+    _collabQrTimer = setInterval(tick, 1000);
+  }
+
+  function showQrState(code) {
+    _stopCollabQrTimer();
+    // Reset to pre-expired UI
+    const cdEl   = document.getElementById("collab-qr-countdown");
+    const ttlRow = document.getElementById("collab-qr-ttl-row");
+    const waitEl = document.getElementById("collab-qr-waiting");
+    const expEl  = document.getElementById("collab-qr-expired");
+    const qrBox  = document.getElementById("collab-qr-box");
+    if (cdEl)   { cdEl.textContent = "3:00"; cdEl.classList.remove("collab-ttl-urgent"); }
+    if (ttlRow) ttlRow.style.display = "";
+    if (waitEl) waitEl.style.display = "";
+    if (expEl)  expEl.style.display  = "none";
+    if (qrBox)  qrBox.classList.remove("collab-qr-expired");
+    document.getElementById("collab-room-code").textContent = code;
     document.getElementById("collab-entry-default").style.display = "none";
-    document.getElementById("collab-entry-qr").style.display = "";
-    document.getElementById("collab-entry-kw").style.display = "none";
+    document.getElementById("collab-entry-qr").style.display      = "";
+    document.getElementById("collab-entry-kw").style.display      = "none";
+    startQrCountdown();
+  }
+
+  document.getElementById("btn-collab-qr")?.addEventListener("click", () => {
+    showQrState(genRoomCode());
+  });
+
+  document.getElementById("btn-collab-qr-regen")?.addEventListener("click", () => {
+    showQrState(genRoomCode());
   });
 
   document.getElementById("btn-collab-keyword")?.addEventListener("click", () => {
-    document.getElementById("collab-keyword").textContent = genKeyword();
+    const kw  = genKeyword();
+    const exp = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const expTime = exp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const expDate = exp.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    const expEl = document.getElementById("collab-kw-expiry");
+    document.getElementById("collab-keyword").textContent = kw;
+    if (expEl) expEl.textContent = `Expires ${expDate} at ${expTime}`;
     document.getElementById("collab-entry-default").style.display = "none";
-    document.getElementById("collab-entry-qr").style.display = "none";
-    document.getElementById("collab-entry-kw").style.display = "";
+    document.getElementById("collab-entry-qr").style.display      = "none";
+    document.getElementById("collab-entry-kw").style.display      = "";
   });
 
   const backToDefault = () => {
+    _stopCollabQrTimer();
     document.getElementById("collab-entry-default").style.display = "";
-    document.getElementById("collab-entry-qr").style.display = "none";
-    document.getElementById("collab-entry-kw").style.display = "none";
+    document.getElementById("collab-entry-qr").style.display      = "none";
+    document.getElementById("collab-entry-kw").style.display      = "none";
   };
   document.getElementById("btn-collab-qr-back")?.addEventListener("click", backToDefault);
   document.getElementById("btn-collab-kw-back")?.addEventListener("click", backToDefault);

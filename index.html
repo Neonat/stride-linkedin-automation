@@ -1164,13 +1164,19 @@
       <p class="text-body text-secondary" style="margin-bottom:var(--space-7);">Start a co-authored post together — each of you adds your own perspective, and Stride merges it into one.</p>
 
       <div style="display:flex; flex-direction:column; gap:var(--space-3);">
-        <button class="btn btn-primary" id="btn-collab-qr">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor"/><rect x="16" y="5" width="3" height="3" fill="currentColor"/><rect x="5" y="16" width="3" height="3" fill="currentColor"/><path d="M14 14h3v3M17 17h3v3M14 17h.01M14 20h.01M17 14h.01"/></svg>
-          Generate QR code
+        <button class="btn btn-primary collab-option-btn" id="btn-collab-qr">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor"/><rect x="16" y="5" width="3" height="3" fill="currentColor"/><rect x="5" y="16" width="3" height="3" fill="currentColor"/></svg>
+          <span class="collab-option-text">
+            <span class="collab-option-label">Generate QR code</span>
+            <span class="collab-option-sub">In person only · expires in 3 minutes</span>
+          </span>
         </button>
-        <button class="btn btn-primary" id="btn-collab-keyword">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Share keyword
+        <button class="btn btn-primary collab-option-btn" id="btn-collab-keyword">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="collab-option-text">
+            <span class="collab-option-label">Share keyword</span>
+            <span class="collab-option-sub">Works remotely · valid for 24 hours</span>
+          </span>
         </button>
       </div>
 
@@ -1182,23 +1188,21 @@
     <!-- QR code waiting state -->
     <div id="collab-entry-qr" style="display:none; text-align:center;">
       <p class="text-h2" style="margin-bottom:var(--space-2);">Show this to your partner</p>
-      <p class="text-body text-secondary" style="margin-bottom:var(--space-5);">They scan the QR or enter the room code below.</p>
-      <div class="collab-qr-box">
+      <p class="text-body text-secondary" style="margin-bottom:var(--space-3);">Scan the QR or type the code. Both of you need to be in the same place right now.</p>
+      <span class="collab-method-chip chip-proximity">📍 In-person only</span>
+
+      <div class="collab-qr-box" id="collab-qr-box">
         <svg class="collab-qr-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           <rect width="100" height="100" fill="white" rx="4"/>
-          <!-- Finder TL -->
           <rect x="8" y="8" width="26" height="26" fill="#0E1116" rx="2"/>
           <rect x="12" y="12" width="18" height="18" fill="white" rx="1"/>
           <rect x="16" y="16" width="10" height="10" fill="#0E1116" rx="1"/>
-          <!-- Finder TR -->
           <rect x="66" y="8" width="26" height="26" fill="#0E1116" rx="2"/>
           <rect x="70" y="12" width="18" height="18" fill="white" rx="1"/>
           <rect x="74" y="16" width="10" height="10" fill="#0E1116" rx="1"/>
-          <!-- Finder BL -->
           <rect x="8" y="66" width="26" height="26" fill="#0E1116" rx="2"/>
           <rect x="12" y="70" width="18" height="18" fill="white" rx="1"/>
           <rect x="16" y="74" width="10" height="10" fill="#0E1116" rx="1"/>
-          <!-- Data dots -->
           <rect x="40" y="8" width="6" height="6" fill="#0E1116" rx="1"/>
           <rect x="50" y="8" width="6" height="6" fill="#0E1116" rx="1"/>
           <rect x="60" y="8" width="6" height="6" fill="#0E1116" rx="1"/>
@@ -1223,11 +1227,26 @@
           <rect x="30" y="74" width="6" height="6" fill="#0E1116" rx="1"/>
         </svg>
       </div>
+
       <p class="collab-room-code" id="collab-room-code">–</p>
-      <div class="collab-waiting">
+
+      <!-- Live countdown -->
+      <div class="collab-ttl-row" id="collab-qr-ttl-row">
+        <span class="collab-ttl-label">Expires in</span>
+        <span class="collab-ttl-value" id="collab-qr-countdown">3:00</span>
+      </div>
+
+      <!-- Expired overlay (hidden until countdown hits 0) -->
+      <div id="collab-qr-expired" style="display:none;" class="collab-expired-msg">
+        Code expired.
+        <button class="btn-link" id="btn-collab-qr-regen">Generate a new one</button>
+      </div>
+
+      <div class="collab-waiting" id="collab-qr-waiting">
         <span class="collab-waiting-dot"></span>
         Waiting for partner…
       </div>
+
       <div style="margin-top:var(--space-5);">
         <button class="btn btn-ghost" id="btn-collab-qr-back" style="width:auto;">← Back</button>
       </div>
@@ -1236,12 +1255,17 @@
     <!-- Keyword waiting state -->
     <div id="collab-entry-kw" style="display:none; text-align:center;">
       <p class="text-h2" style="margin-bottom:var(--space-2);">Share this with your partner</p>
-      <p class="text-body text-secondary" style="margin-bottom:var(--space-5);">They type this keyword on Stride to join your session.</p>
+      <p class="text-body text-secondary" style="margin-bottom:var(--space-3);">Send it over any channel — they have 24 hours to type it in on Stride.</p>
+      <span class="collab-method-chip chip-remote">💬 Works remotely</span>
+
       <div class="collab-keyword-badge" id="collab-keyword">–</div>
-      <div class="collab-waiting" style="margin-top:var(--space-4);">
+      <p class="collab-kw-expiry" id="collab-kw-expiry">Expires in 24 hours</p>
+
+      <div class="collab-waiting" style="margin-top:var(--space-3);">
         <span class="collab-waiting-dot"></span>
         Waiting for partner…
       </div>
+
       <div style="margin-top:var(--space-5);">
         <button class="btn btn-ghost" id="btn-collab-kw-back" style="width:auto;">← Back</button>
       </div>
