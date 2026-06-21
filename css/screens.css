@@ -84,8 +84,6 @@ body.on-landing .bg-blobs { display: none; }
 .lnav-link:hover { color: #0E1116; }
 
 .lnav-cta {
-  /* Override .btn's width:100% — must be compact pill in nav */
-  width: auto !important; flex-shrink: 0;
   font-size: 15px; font-weight: 600;
   padding: 10px 24px; border-radius: 999px;
   background: #1746C8; color: #ffffff;
@@ -143,8 +141,6 @@ body.on-landing .bg-blobs { display: none; }
 .lhero-ctas { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 
 .lhero-btn-primary {
-  /* Override .btn's width:100% */
-  width: auto !important;
   font-size: 15px; font-weight: 600;
   padding: 14px 28px; border-radius: 999px;
   background: #1746C8; color: #ffffff;

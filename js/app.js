@@ -1745,14 +1745,23 @@ async function _routeSession(session, { playLoading = false } = {}) {
   }
 }
 
-async function checkSessionAndRoute() {
+async function checkSessionAndRoute({ forceLogin = false } = {}) {
   const sb = await initSupabase();
   if (!sb) { showScreen('landing'); return; }
 
   const { data: { session } } = await sb.auth.getSession();
-  // Only route away from landing if there's an actual session
   if (session) {
-    await _routeSession(session, { playLoading: false });
+    if (forceLogin) {
+      // Returning from OAuth redirect — always show login screen so the user
+      // can confirm / connect the second provider before entering the app
+      const identities  = session.user?.identities || [];
+      const hasGoogle   = identities.some(i => i.provider === 'google');
+      const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
+      updateLoginButtonStates({ hasGoogle, hasLinkedIn });
+      showScreen('login');
+    } else {
+      await _routeSession(session, { playLoading: false });
+    }
   } else {
     showScreen('landing');
   }
@@ -2243,6 +2252,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         redirectTo: window.location.origin,
       },
     };
+    localStorage.setItem('stride-oauth-pending', '1');
     const { error } = session
       ? await sb.auth.linkIdentity(opts)
       : await sb.auth.signInWithOAuth(opts);
@@ -2268,6 +2278,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       provider: 'linkedin_oidc',
       options: { redirectTo: window.location.origin },
     };
+    localStorage.setItem('stride-oauth-pending', '1');
     const { error } = session
       ? await sb.auth.linkIdentity(opts)
       : await sb.auth.signInWithOAuth(opts);
@@ -2298,9 +2309,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   })
 
-  // "Replay animation" button on landing hero
+  // "Replay animation" button on landing hero — call directly since the
+  // stride-replay listener is removed when the intro animation finishes
   document.getElementById('btn-replay-anim')?.addEventListener('click', () => {
-    window.dispatchEvent(new Event('stride-replay'));
+    playIntroAnimation();
   });
 
   if (isFirstVisit) {
@@ -2325,6 +2337,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
   } else {
-    checkSessionAndRoute();
+    const fromOAuth = !!localStorage.getItem('stride-oauth-pending');
+    if (fromOAuth) localStorage.removeItem('stride-oauth-pending');
+    checkSessionAndRoute({ forceLogin: fromOAuth });
   }
 });
