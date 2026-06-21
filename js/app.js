@@ -872,6 +872,7 @@ async function publishToLinkedIn(btn) {
     }
 
     // ── Step 3: Success ───────────────────────────────────────────────────
+    setLastPostUrl(pubData.postUrl || '');
     showScreen("published");
     setTimeout(runPublishedAnimation, 100);
 
@@ -1641,6 +1642,10 @@ async function checkSessionAndRoute() {
 /* ─────────────────────────────────────────
    BOOT
 ───────────────────────────────────────── */
+function setLastPostUrl(url) {
+  sessionStorage.setItem('stride-last-post-url', url || 'https://www.linkedin.com/feed/')
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   goToStep(1);
   initOnboarding();
@@ -1651,5 +1656,38 @@ document.addEventListener("DOMContentLoaded", () => {
   initMomentModal();
   wireButtons();
   document.getElementById("btn-refresh-linkedin")?.addEventListener("click", loadLinkedInStats);
+
+  // Wire "See my post" button on published screen
+  document.getElementById('btn-see-post')?.addEventListener('click', () => {
+    const url = sessionStorage.getItem('stride-last-post-url') || 'https://www.linkedin.com/feed/'
+    window.open(url, '_blank')
+    sessionStorage.setItem('stride-show-confetti', 'true')
+  })
+
+  // Fire confetti and show success banner on return from LinkedIn
+  if (sessionStorage.getItem('stride-show-confetti') === 'true') {
+    sessionStorage.removeItem('stride-show-confetti')
+    const banner = document.getElementById('success-banner')
+    if (banner) banner.style.display = 'block'
+    setTimeout(() => {
+      confetti({
+        particleCount: 180,
+        spread: 80,
+        origin: { y: 0.5 },
+        colors: ['#1A5F8A', '#27AE60', '#EF9F27', '#ffffff']
+      })
+      setTimeout(() => {
+        confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0 } })
+        confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1 } })
+      }, 400)
+    }, 300)
+  }
+
+  // Dismiss success banner
+  document.getElementById('btn-dismiss-success')?.addEventListener('click', () => {
+    const banner = document.getElementById('success-banner')
+    if (banner) banner.style.display = 'none'
+  })
+
   checkSessionAndRoute();
 });

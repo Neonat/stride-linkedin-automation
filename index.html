@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/screens.css" />
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
@@ -389,6 +390,14 @@ Stride helps you share it.</h1>
 
     <div class="home-grid">
 
+      <!-- Success banner (shown on return from LinkedIn) -->
+      <div id="success-banner" class="card home-section" style="display:none; border: 1px solid var(--color-green); background: transparent; text-align:center; padding: var(--space-6);">
+        <p style="font-size:24px; margin-bottom:var(--space-2);">🎉</p>
+        <p class="text-h3" style="margin-bottom:var(--space-1);">You did it!</p>
+        <p class="text-body text-secondary" style="margin-bottom:var(--space-4);">Your post is live. Keep the momentum going.</p>
+        <button class="btn btn-ghost btn-inline" id="btn-dismiss-success" style="font-size:13px;">Dismiss</button>
+      </div>
+
       <!-- Profile hero card -->
       <div class="card home-section" style="grid-column:1/-1; display:flex; align-items:center; gap:var(--space-4); flex-wrap:wrap;">
         <div class="avatar avatar-lg" id="profile-hero-avatar" style="width:56px;height:56px;font-size:20px;flex-shrink:0;">AT</div>
@@ -728,18 +737,15 @@ Stride helps you share it.</h1>
      SCREEN 5 — PUBLISHED / SUCCESS
 ════════════════════════════════════════════════════ -->
 <section id="screen-published" class="screen">
-
   <nav class="navbar navbar-wide">
     <div class="navbar-logo">
       <span class="navbar-logo-text">Stri</span><span class="navbar-logo-box">de</span>
     </div>
-    <div class="avatar" data-goto="admin" style="cursor: pointer;">AT</div>
+    <div class="avatar" data-goto="admin" style="cursor:pointer;">AT</div>
   </nav>
 
   <div class="mobile-wrap wrap-dashboard">
-
     <div class="published-grid">
-
       <div class="published-grid-main">
 
         <div class="published-hero">
@@ -750,8 +756,18 @@ Stride helps you share it.</h1>
           <p class="text-body text-secondary">Your post is live on LinkedIn.</p>
         </div>
 
+        <!-- See post button -->
+        <button id="btn-see-post" class="btn btn-primary" style="width:100%; margin-bottom:var(--space-3);">
+          See my post on LinkedIn
+          <span class="icon" style="margin-left:var(--space-2);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </span>
+        </button>
+
+        <button class="btn btn-ghost" data-goto="home" style="width:100%;">Back to dashboard</button>
+
         <!-- Analytics -->
-        <p class="section-label" style="margin-bottom:var(--space-3);">Post analytics</p>
+        <p class="section-label" style="margin:var(--space-6) 0 var(--space-3);">Post analytics</p>
         <div class="analytics-row">
           <div class="analytics-card">
             <div class="analytics-num counting" id="stat-impressions">0</div>
@@ -766,8 +782,6 @@ Stride helps you share it.</h1>
       </div>
 
       <div class="published-grid-side">
-
-        <!-- Pillar unlocked -->
         <div class="card" style="display:flex; align-items:center; gap:var(--space-3);">
           <span class="badge badge-success" style="padding:var(--space-1) var(--space-3); font-size:12px;">
             <span class="icon"><svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span>
@@ -775,13 +789,8 @@ Stride helps you share it.</h1>
           </span>
           <span class="text-body">Leadership pillar: <strong>unlocked</strong></span>
         </div>
-
-        <button class="btn btn-primary" data-goto="home">Back to Home</button>
-
       </div>
-
     </div>
-
   </div>
 </section>
 
