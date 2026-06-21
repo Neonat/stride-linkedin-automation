@@ -128,6 +128,9 @@ function showScreen(id) {
     renderHomePillars();
     renderHomePersonaCard(window.personaData, null);
   }
+  if (id === "admin") {
+    loadLinkedInStats();
+  }
 
   // Handle global navbar visibility and active tabs
   const globalNav = document.getElementById("global-nav");
@@ -952,6 +955,52 @@ document.addEventListener("click", () => {
 });
 
 /* ─────────────────────────────────────────
+   ADMIN — LinkedIn stats
+───────────────────────────────────────── */
+async function loadLinkedInStats() {
+  const container = document.getElementById("admin-linkedin-content");
+  if (!container) return;
+  container.innerHTML = '<p class="text-body text-muted">Loading…</p>';
+  try {
+    const res  = await fetch("/api/linkedin_stats");
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Unknown error");
+    const p = data.profile || {};
+    const posts = (data.posts || []);
+    let html = `
+      <div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4);">
+        <div class="avatar" style="background:var(--color-deep-blue); color:#fff; font-size:16px; width:44px; height:44px;">
+          ${(p.name || "?").split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()}
+        </div>
+        <div>
+          <p style="font-weight:600; font-size:15px; margin:0;">${p.name || "—"}</p>
+          <p class="text-caption text-muted" style="margin:2px 0 0 0;">${p.headline || ""}</p>
+        </div>
+      </div>`;
+    if (posts.length) {
+      html += `<p class="section-label" style="margin-bottom:var(--space-3);">Recent posts</p>`;
+      html += `<div style="display:flex; flex-direction:column; gap:var(--space-3);">`;
+      for (const post of posts) {
+        const preview = post.text ? post.text.slice(0, 120) + (post.text.length > 120 ? "…" : "") : "(no text)";
+        html += `
+          <div style="border:1px solid var(--border-default); border-radius:var(--radius-md); padding:var(--space-3);">
+            <p class="text-small" style="margin:0 0 var(--space-2) 0; color:var(--text-primary);">${preview}</p>
+            <p class="text-caption text-muted" style="margin:0;">
+              ${post.likes} likes &middot; ${post.comments} comments &middot; ${post.shares} shares
+            </p>
+          </div>`;
+      }
+      html += `</div>`;
+    } else {
+      html += `<p class="text-caption text-muted">No recent posts found.</p>`;
+    }
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<p class="text-caption" style="color:var(--color-red);">Could not load LinkedIn data: ${err.message}</p>`;
+  }
+}
+
+/* ─────────────────────────────────────────
    CONNECT SCREEN — Supabase real backend
 ───────────────────────────────────────── */
 const Connect = (() => {
@@ -1038,6 +1087,23 @@ const Connect = (() => {
       });
     }
 
+    // Google Calendar connect
+    const gcalBtn = document.getElementById("btn-connect-gcal");
+    if (gcalBtn && !gcalBtn._wired) {
+      gcalBtn._wired = true;
+      gcalBtn.addEventListener("click", async () => {
+        const { error } = await _sb.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            scopes: "https://www.googleapis.com/auth/calendar.readonly",
+            redirectTo: window.location.href,
+          },
+        });
+        if (error) console.error("Google Calendar auth error:", error.message);
+      });
+    }
+    _checkGcalStatus();
+
     // Sign out
     const soBtn = document.getElementById("connect-sign-out");
     if (soBtn && !soBtn._wired) {
@@ -1047,6 +1113,22 @@ const Connect = (() => {
         _jwt = null; _profile = null;
         _show("connect-auth");
       });
+    }
+  }
+
+  async function _checkGcalStatus() {
+    const { data: { session } } = await _sb.auth.getSession();
+    const statusEl = document.getElementById("gcal-status");
+    const btnEl    = document.getElementById("btn-connect-gcal");
+    if (!statusEl || !btnEl) return;
+    if (session?.provider_token) {
+      statusEl.textContent   = "Connected ✓";
+      statusEl.style.color   = "var(--color-green)";
+      btnEl.textContent      = "Reconnect";
+    } else {
+      statusEl.textContent   = "Not connected";
+      statusEl.style.color   = "";
+      btnEl.textContent      = "Connect";
     }
   }
 
@@ -1356,5 +1438,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initThemeToggle();
   initMomentModal();
   wireButtons();
+  document.getElementById("btn-refresh-linkedin")?.addEventListener("click", loadLinkedInStats);
   showScreen("landing");
 });
