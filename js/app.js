@@ -1007,7 +1007,30 @@ const Connect = (() => {
   let _sb = null;     // Supabase JS client
   let _jwt = null;    // current user's access token
   let _profile = null;
+// Make sure your Supabase client is initialised like this
+const supabase = window.supabase.createClient(
+  'https://YOUR_PROJECT_REF.supabase.co',
+  'YOUR_ANON_KEY'
+)
 
+// Google Calendar connect
+document.getElementById('btn-connect-gcal')?.addEventListener('click', async () => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      scopes: 'https://www.googleapis.com/auth/calendar.readonly',
+      redirectTo: 'https://linked-in-trail-blazer-hackathon.vercel.app'
+    }
+  })
+  if (error) console.error('Google auth error:', error.message)
+})
+
+// On page load — check if Google Calendar is already connected
+const { data: { session } } = await supabase.auth.getSession()
+if (session?.provider_token) {
+  document.getElementById('gcal-status').textContent = 'Connected ✓'
+  document.getElementById('btn-connect-gcal').textContent = 'Reconnect'
+}
   // ── State panel switcher ────────────────────────────────────────────────
   function _show(panelId) {
     ["connect-loading", "connect-auth", "connect-setup", "connect-main"].forEach(id => {
