@@ -1468,6 +1468,7 @@ async function initSupabase() {
     const cfg = await fetch("/api/config").then(r => r.json());
     if (!cfg.ok || !cfg.supabaseUrl) return null;
     strideSupabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    window._sb = strideSupabase;
   } catch {
     strideSupabase = null;
   }
@@ -1495,14 +1496,27 @@ async function saveOnboardingProfile(answers) {
 }
 
 async function loadProfile() {
-  const sb = strideSupabase;
-  if (!sb) return null;
-  const { data: { session } } = await sb.auth.getSession();
+  const { data: { session } } = await strideSupabase.auth.getSession();
   if (!session) return null;
-  const { data, error } = await sb
-    .from("profiles").select("*")
-    .eq("id", session.user.id).single();
-  if (error || !data) return null;
+
+  const { data, error } = await strideSupabase
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+
+  if (error?.code === 'PGRST116') {
+    const meta = session.user.user_metadata || {};
+    await strideSupabase.from('profiles').insert({
+      id: session.user.id,
+      email: session.user.email,
+      full_name: meta.full_name || meta.name || '',
+      avatar_url: meta.avatar_url || meta.picture || '',
+    });
+    return await loadProfile();
+  }
+
+  if (error) { console.error('loadProfile error:', error.message); return null; }
   return data;
 }
 
@@ -1512,47 +1526,43 @@ function getSelectedChips(stepId) {
 }
 
 function populateDashboard(profile, session) {
-  const name = profile.full_name || session.user.email || "You";
-  const initials = name.split(" ").filter(Boolean).map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
+  const name = profile.full_name || session?.user?.email || 'You';
+  const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
-  const navAv = document.getElementById("nav-avatar");
-  if (navAv) {
-    if (profile.avatar_url) {
-      navAv.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
-    } else {
-      navAv.textContent = initials;
+  // Replace all hardcoded "AT" initials
+  document.querySelectorAll('.avatar').forEach(el => {
+    if (el.textContent.trim() === 'AT') el.textContent = initials;
+  });
+
+  // Replace all hardcoded "Alex Tan" text nodes
+  document.querySelectorAll('p, span, div').forEach(el => {
+    if (el.children.length === 0 && el.textContent.trim() === 'Alex Tan') {
+      el.textContent = name;
     }
+  });
+
+  // Google profile photo in nav avatar
+  if (profile.avatar_url) {
+    document.querySelectorAll('.avatar').forEach(el => {
+      if (el.textContent.trim() === initials) {
+        el.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      }
+    });
   }
 
-  const settAv = document.getElementById("settings-avatar");
-  if (settAv) settAv.textContent = initials;
+  // Named IDs from profile hero card
+  const heroName = document.getElementById('profile-hero-name');
+  const heroEmail = document.getElementById('profile-hero-email');
+  const heroPositioning = document.getElementById('profile-hero-positioning');
+  const heroPills = document.getElementById('profile-hero-pills');
 
-  const settName = document.getElementById("settings-name");
-  if (settName) settName.textContent = name;
-
-  const collabAv = document.getElementById("collab-user-avatar");
-  if (collabAv) collabAv.textContent = initials;
-
-  const collabName = document.getElementById("collab-user-name");
-  if (collabName) collabName.textContent = name;
-
-  const heroAv = document.getElementById("profile-hero-avatar");
-  if (heroAv) heroAv.textContent = initials;
-
-  const heroName = document.getElementById("profile-hero-name");
   if (heroName) heroName.textContent = name;
-
-  const heroEmail = document.getElementById("profile-hero-email");
-  if (heroEmail) heroEmail.textContent = profile.email || session.user.email || "";
-
-  const heroPos = document.getElementById("profile-hero-positioning");
-  if (heroPos) heroPos.textContent = profile.positioning || "";
-
-  const heroPills = document.getElementById("profile-hero-pills");
-  if (heroPills && Array.isArray(profile.pillars) && profile.pillars.length) {
+  if (heroEmail) heroEmail.textContent = profile.email || '';
+  if (heroPositioning) heroPositioning.textContent = profile.positioning || '';
+  if (heroPills && profile.pillars?.length) {
     heroPills.innerHTML = profile.pillars
       .map(p => `<span class="chip chip-technical" style="font-size:11px;padding:2px 10px;">${p}</span>`)
-      .join("");
+      .join('');
   }
 }
 
@@ -1585,12 +1595,17 @@ async function checkSessionAndRoute() {
     return;
   }
 
-  // Clear any stale non-Google sessions
-  let { data: { session } } = await sb.auth.getSession();
-  if (session && !session.provider_token) {
-    await sb.auth.signOut();
-    session = null;
+  // Clear any stale non-Google sessions (wait 500 ms to let OAuth token arrive first)
+  const { data: { session: existingSession } } = await sb.auth.getSession();
+  if (existingSession && !existingSession.provider_token) {
+    await new Promise(r => setTimeout(r, 500));
+    const { data: { session: rechecked } } = await sb.auth.getSession();
+    if (rechecked && !rechecked.provider_token) {
+      await sb.auth.signOut();
+    }
   }
+
+  const { data: { session } } = await sb.auth.getSession();
 
   if (session) {
     updateUserUI(session.user);
@@ -1608,8 +1623,7 @@ async function checkSessionAndRoute() {
   }
 
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === "SIGNED_IN" && session) {
-      updateUserUI(session.user);
+    if (event === "SIGNED_IN" && session?.provider_token) {
       const profile = await loadProfile();
       if (profile) {
         populateDashboard(profile, session);
