@@ -1843,7 +1843,47 @@ function setLastPostUrl(url) {
   sessionStorage.setItem('stride-last-post-url', url || 'https://www.linkedin.com/feed/')
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function playIntroAnimation() {
+  return new Promise(resolve => {
+    const intro = document.getElementById('intro-animation');
+    if (!intro) { resolve(); return; }
+
+    const blobs = document.querySelector('.bg-blobs');
+    if (blobs) blobs.style.opacity = '0';
+
+    intro.style.display = 'block';
+
+    const dismiss = () => {
+      intro.style.transition = 'opacity 0.4s ease';
+      intro.style.opacity = '0';
+      setTimeout(() => {
+        intro.style.display = 'none';
+        if (blobs) blobs.style.opacity = '1';
+        resolve();
+      }, 400);
+    };
+
+    setTimeout(dismiss, 5600);
+    intro.addEventListener('click', () => {
+      intro.style.transition = 'opacity 0.3s ease';
+      intro.style.opacity = '0';
+      setTimeout(() => {
+        intro.style.display = 'none';
+        if (blobs) blobs.style.opacity = '1';
+        resolve();
+      }, 300);
+    }, { once: true });
+  });
+}
+
+window._resetIntro = () => { localStorage.removeItem('stride-visited'); location.reload(); };
+
+document.addEventListener("DOMContentLoaded", async () => {
+  if (!localStorage.getItem('stride-visited')) {
+    localStorage.setItem('stride-visited', 'true');
+    await playIntroAnimation();
+  }
+
   goToStep(1);
   initOnboarding();
   initSlider();
