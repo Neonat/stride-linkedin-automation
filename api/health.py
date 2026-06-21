@@ -1,7 +1,7 @@
 """
 Stride — /api/health
 GET → checks that each integration can authenticate.
-Returns { agnes, nemotron, linkedin, supabase } — ok/fail per service.
+Returns { agnes, nemotron, linkedin, supabase, google_calendar } — ok/fail per service.
 NEVER returns secret values or key material in the response.
 """
 
@@ -17,11 +17,8 @@ _NIM_URL              = "https://integrate.api.nvidia.com/v1/chat/completions"
 _DEFAULT_SAFETY_MODEL = "nvidia/nemotron-3-content-safety"
 
 
-def _check_agnes() -> dict:
-    api_key = os.environ.get("AGNES_AI_TOKEN")
-    if not api_key:
-        return {"ok": False, "error": "AGNES_AI_TOKEN not set"}
-    model = os.environ.get("AGNES_MODEL", _DEFAULT_AGNES_MODEL)
+def _try_agnes_key(api_key: str, model: str) -> dict:
+    """Attempt a single Agnes key. Returns result dict."""
     try:
         resp = requests.post(
             _AGNES_URL,
@@ -40,6 +37,38 @@ def _check_agnes() -> dict:
         return {"ok": False, "error": "Timeout after 15s"}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
+
+
+def _check_agnes() -> dict:
+    model = os.environ.get("AGNES_MODEL", _DEFAULT_AGNES_MODEL)
+
+    primary_key = os.environ.get("AGNES_AI_TOKEN")
+    backup_key  = os.environ.get("AGNES_AI_TOKEN_2")
+
+    if not primary_key and not backup_key:
+        return {"ok": False, "error": "No Agnes keys set (AGNES_AI_TOKEN, AGNES_AI_TOKEN_2)"}
+
+    if primary_key:
+        result = _try_agnes_key(primary_key, model)
+        if result["ok"]:
+            return {**result, "key_used": "AGNES_AI_TOKEN"}
+        # Primary failed — note it and try backup
+        primary_error = result.get("error")
+    else:
+        primary_error = "AGNES_AI_TOKEN not set"
+
+    if backup_key:
+        result = _try_agnes_key(backup_key, model)
+        if result["ok"]:
+            return {**result, "key_used": "AGNES_AI_TOKEN_2", "primary_error": primary_error}
+        return {
+            "ok": False,
+            "error": "Both keys failed",
+            "primary_error": primary_error,
+            "backup_error": result.get("error"),
+        }
+
+    return {"ok": False, "error": primary_error}
 
 
 def _check_nemotron() -> dict:
@@ -94,6 +123,31 @@ def _check_supabase() -> dict:
         return {"ok": False, "error": type(exc).__name__}
 
 
+def _check_google_calendar(request_headers: dict) -> dict:
+    """
+    Checks the Google Calendar API using the provider_token passed
+    from the frontend as 'X-Google-Token'.
+    The token is obtained from supabase.auth.getSession().session.provider_token
+    on the client side and sent in the request header.
+    """
+    token = request_headers.get("X-Google-Token") or request_headers.get("x-google-token")
+    if not token:
+        return {"ok": False, "error": "X-Google-Token header not provided"}
+    try:
+        resp = requests.get(
+            "https://www.googleapis.com/calendar/v3/calendarList?maxResults=1",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            return {"ok": True}
+        if resp.status_code == 401:
+            return {"ok": False, "error": "Token expired or invalid — user must reconnect Google"}
+        return {"ok": False, "error": f"HTTP {resp.status_code}"}
+    except Exception as exc:
+        return {"ok": False, "error": type(exc).__name__}
+
+
 class handler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
@@ -103,17 +157,18 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         results = {
-            "agnes":    _check_agnes(),
-            "nemotron": _check_nemotron(),
-            "linkedin": _check_linkedin(),
-            "supabase": _check_supabase(),
+            "agnes":            _check_agnes(),
+            "nemotron":         _check_nemotron(),
+            "linkedin":         _check_linkedin(),
+            "supabase":         _check_supabase(),
+            "google_calendar":  _check_google_calendar(dict(self.headers)),
         }
         all_ok = all(v.get("ok") for v in results.values())
         return self._json(200 if all_ok else 207, results)
 
     def _send_cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Google-Token")
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
 
     def _json(self, status: int, data: dict):
