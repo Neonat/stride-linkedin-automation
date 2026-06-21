@@ -1582,9 +1582,36 @@ function updateUserUI(user) {
 }
 
 // ── Loading + reveal animation ─────────────────────────────────────────────
+// ── Footprint dot-matrix loader — generated procedurally from geometry ────────
+function initFootprintLoader() {
+  const grid = document.getElementById('fp-grid');
+  if (!grid || grid.childElementCount > 0) return; // already built
+  const inside = (x, y) => {
+    const fe   = ((x-62)**2)/1600 + ((y-76)**2)/1600   <= 1;
+    const he   = ((x-66)**2)/900  + ((y-184)**2)/1444  <= 1;
+    const arch = x > 50 && x < 96 && y >= 112 && y <= 152;
+    const toes = [[36,28,10],[51,18,11],[66,15,12],[81,18,11],[95,27,10]];
+    return fe || he || arch || toes.some(([tx,ty,tr]) => (x-tx)**2+(y-ty)**2 <= tr*tr);
+  };
+  const frag = document.createDocumentFragment();
+  for (let y = 6; y <= 216; y += 9) {
+    for (let x = 2; x <= 118; x += 9) {
+      if (!inside(x, y)) continue;
+      const d = document.createElement('span');
+      d.className = 'fp-dot';
+      d.style.left  = (x - 3.5) + 'px';
+      d.style.top   = (y - 3.5) + 'px';
+      d.style.animationDelay = (Math.random() * 1.25).toFixed(3) + 's';
+      frag.appendChild(d);
+    }
+  }
+  grid.appendChild(frag);
+}
+
 async function playLoadingAndReveal(session) {
   const overlay = document.getElementById('screen-loading');
   if (!overlay) return;
+  initFootprintLoader();
   overlay.style.display = 'flex';
   overlay.style.opacity = '1';
 
@@ -2161,6 +2188,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   goToStep(1);
   initOnboarding();
+  initFootprintLoader();
   initSlider();
   initDraftEditor();
   initDevMenu();
