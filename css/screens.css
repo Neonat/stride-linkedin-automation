@@ -13,6 +13,9 @@ html, body {
   min-height: 100vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 .screen.active { display: block; }
 
@@ -288,6 +291,12 @@ body.on-landing .bg-blobs { display: none; }
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Widen inner when profile payoff is active */
+.onboarding-inner.payoff-wide {
+  max-width: 920px;
 }
 
 .onboarding-logo {

@@ -290,22 +290,22 @@ function showProfileCard(fromPersonaData) {
   if (!profile) return;
   profile.classList.add("active");
 
+  // Widen the inner container for the two-column payoff layout
+  const inner = document.querySelector(".onboarding-inner");
+  if (inner) inner.classList.add("payoff-wide");
+
   const answers = _collectOnboardingAnswers();
   const pillars = answers.pillars.length > 0 ? answers.pillars : demoData.user.pillars;
   window.userSelectedPillars = pillars;
 
   let persona, positioning, tone;
 
-  const autofillNote = document.getElementById("profile-autofill-note");
   if (fromPersonaData) {
-    // Persona came from the API — use it directly
     persona      = fromPersonaData.persona_summary || "";
     positioning  = fromPersonaData.positioning     || "";
     tone         = fromPersonaData.tone            || answers.tone || "Direct";
     window.personaData = fromPersonaData;
-    if (autofillNote) autofillNote.style.display = "flex";
   } else {
-    // Build a local fallback from onboarding selections
     const role  = answers.role  || "Professional";
     const field = answers.field || "Tech";
     const goals = answers.wants;
@@ -313,16 +313,15 @@ function showProfileCard(fromPersonaData) {
     persona     = `${role} building in ${field}`;
     const goalText = goals.length > 0 ? ` to attract ${goals.join(" and ")}` : "";
     positioning = `I share my journey in ${field}${goalText} — keeping it ${tone.toLowerCase()} and authentic.`;
-    if (autofillNote) autofillNote.style.display = "none";
   }
 
-  const personaEl = profile.querySelector(".profile-persona");
+  const personaEl = document.getElementById("payoff-persona") || profile.querySelector(".profile-persona");
   if (personaEl) personaEl.textContent = persona;
 
-  const posEl = profile.querySelector(".profile-positioning");
+  const posEl = document.getElementById("payoff-positioning") || profile.querySelector(".profile-positioning");
   if (posEl) posEl.textContent = positioning;
 
-  const metaEl = profile.querySelector(".profile-meta");
+  const metaEl = document.getElementById("payoff-meta") || profile.querySelector(".profile-meta");
   if (metaEl) {
     metaEl.innerHTML = "";
     pillars.forEach(p => {
@@ -332,11 +331,10 @@ function showProfileCard(fromPersonaData) {
       span.textContent = p;
       metaEl.appendChild(span);
     });
-    const toneSpan = document.createElement("span");
-    toneSpan.className = "profile-tone-label";
-    toneSpan.textContent = tone;
-    metaEl.appendChild(toneSpan);
   }
+
+  const autofillNote = document.getElementById("profile-autofill-note");
+  if (autofillNote) autofillNote.style.display = fromPersonaData ? "flex" : "none";
 }
 
 // Wire up the resume upload step
@@ -917,17 +915,6 @@ function wireButtons() {
       } else if (target === "onboarding") {
         showScreen("onboarding");
         goToStep(1);
-      } else if (target === "home" && btn.closest("#onboarding-profile")) {
-        localStorage.setItem("stride-onboarded", "true");
-        saveOnboardingProfile({
-          role:        getSelectedChips("onboarding-step-1"),
-          field:       getSelectedChips("onboarding-step-2"),
-          goals:       getSelectedChips("onboarding-step-3"),
-          tone:        getSelectedChips("onboarding-step-4"),
-          pillars:     getSelectedChips("onboarding-step-5"),
-          positioning: document.querySelector(".profile-positioning")?.textContent || "",
-        });
-        showScreen("home");
       } else {
         showScreen(target);
       }
@@ -1912,6 +1899,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     const overlay = document.getElementById('success-modal-overlay')
     if (overlay) overlay.style.display = 'none'
   })
+
+  // Profile payoff → login
+  document.getElementById('btn-take-stride')?.addEventListener('click', async () => {
+    await saveOnboardingProfile({
+      role:        getSelectedChips('onboarding-step-1'),
+      field:       getSelectedChips('onboarding-step-2'),
+      goals:       getSelectedChips('onboarding-step-3'),
+      tone:        getSelectedChips('onboarding-step-4'),
+      pillars:     getSelectedChips('onboarding-step-5'),
+      positioning: document.getElementById('payoff-positioning')?.textContent || '',
+    });
+    showScreen('login');
+  });
+
+  // Google sign-in
+  document.getElementById('btn-google-signin')?.addEventListener('click', async () => {
+    const sb = await initSupabase();
+    if (!sb) return;
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        scopes: 'https://www.googleapis.com/auth/calendar.readonly',
+        redirectTo: 'https://linked-in-trail-blazer-hackathon.vercel.app',
+      },
+    });
+    if (error) console.error(error.message);
+  });
+
+  // LinkedIn sign-in
+  document.getElementById('btn-linkedin-signin')?.addEventListener('click', async () => {
+    const sb = await initSupabase();
+    if (!sb) return;
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'linkedin_oidc',
+      options: {
+        redirectTo: 'https://linked-in-trail-blazer-hackathon.vercel.app',
+      },
+    });
+    if (error) console.error(error.message);
+  });
 
   // Export persona button
   document.getElementById('btn-export-persona')?.addEventListener('click', async () => {
