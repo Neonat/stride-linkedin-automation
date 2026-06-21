@@ -6,6 +6,7 @@
     "api/profile.py":      { "maxDuration": 60 },
     "api/safety_check.py": { "maxDuration": 30 },
     "api/publish.py":      { "maxDuration": 30 },
-    "api/health.py":       { "maxDuration": 60 }
+    "api/health.py":       { "maxDuration": 60 },
+    "api/linkedin_stats.py": { "maxDuration": 30 }
   }
 }

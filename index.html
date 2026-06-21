@@ -921,6 +921,16 @@ Stride helps you share it.</h1>
       </div>
     </div>
 
+    <div class="card" style="margin-bottom:var(--space-6);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <p class="section-label" style="margin:0;">Connections</p>
+          <p class="text-caption text-muted" style="margin:4px 0 0 0;">Manage your Stride network and integrations</p>
+        </div>
+        <button class="btn btn-secondary btn-inline" data-goto="connect" style="width:auto;">Open</button>
+      </div>
+    </div>
+
     <div class="card">
       <p class="section-label">Preferences</p>
       
@@ -992,6 +1002,17 @@ Stride helps you share it.</h1>
         <div class="metric-num">71%</div>
         <div class="metric-label">Pillar coverage</div>
         <div class="metric-sub">↑ 5pp this month</div>
+      </div>
+    </div>
+
+    <!-- LinkedIn account card -->
+    <div class="card" id="admin-linkedin-card" style="margin-bottom:var(--space-6);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-4);">
+        <p class="text-h3" style="margin:0;">LinkedIn Account</p>
+        <button class="btn btn-secondary btn-inline" id="btn-refresh-linkedin" style="width:auto; font-size:13px;">Refresh</button>
+      </div>
+      <div id="admin-linkedin-content">
+        <p class="text-body text-muted">Loading LinkedIn data…</p>
       </div>
     </div>
 
@@ -1287,6 +1308,17 @@ Stride helps you share it.</h1>
       <p class="section-label" style="margin-bottom:var(--space-3);">Your connections</p>
       <div id="connect-connections-list">
         <p class="text-small text-muted">Loading…</p>
+      </div>
+
+      <!-- Google Calendar Integration -->
+      <div class="divider" style="margin:var(--space-6) 0;"></div>
+      <p class="section-label" style="margin-bottom:var(--space-3);">Integrations</p>
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <p style="font-weight:600; font-size:14px; margin:0;">Google Calendar</p>
+          <p class="text-caption text-muted" style="margin:2px 0 0 0;" id="gcal-status">Not connected</p>
+        </div>
+        <button class="btn btn-secondary btn-inline" id="btn-connect-gcal" style="width:auto;">Connect</button>
       </div>
 
       <!-- Sign out -->
