@@ -1891,9 +1891,13 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
   const sb = await initSupabase();
   if (!sb) { showScreen('landing'); return; }
 
-  // Use onAuthStateChange as the primary session detection mechanism.
-  // INITIAL_SESSION fires after the Supabase client processes the #access_token
-  // hash on OAuth redirect — getSession() called before that completes returns null.
+  // Guard against double-routing: INITIAL_SESSION + SIGNED_IN both fire on an
+  // OAuth return. Without this flag the forceLogin setTimeout and the SIGNED_IN
+  // handler both call _routeSession, the second one with a stale session that may
+  // have hasLinkedIn=false, causing showScreen('login') to clear the active screen
+  // mid-animation and leave the page blank.
+  let _routed = false;
+
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
       const identities  = session?.user?.identities || [];
@@ -1908,18 +1912,30 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
       }
 
       if (forceLogin && event === 'INITIAL_SESSION') {
-        // Returning from OAuth redirect — flash login screen showing connected state
+        // Returning from OAuth redirect — show login with connected-state badges,
+        // then route after a brief pause so the user can see the confirmation.
         updateLoginButtonStates({ hasGoogle, hasLinkedIn });
         showScreen('login');
         if (hasLinkedIn) {
-          setTimeout(() => _routeSession(session, { playLoading: true }), 1500);
+          setTimeout(() => {
+            if (_routed) return;
+            _routed = true;
+            // Skip the loading animation here — the 1500ms pause already gives
+            // the user a moment to see "LinkedIn connected ✓" before advancing.
+            _routeSession(session, { playLoading: false });
+          }, 1500);
         }
         // Google only: stay on login so user can sign in with LinkedIn
         return;
       }
 
+      // Prevent the SIGNED_IN / USER_UPDATED event from racing the setTimeout
+      // above when forceLogin is true (both would otherwise call _routeSession).
+      if (forceLogin && _routed) return;
+      if (forceLogin) { _routed = true; }
+
       const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
-      await _routeSession(session, { playLoading: hasLinkedIn && wasOnLogin });
+      await _routeSession(session, { playLoading: hasLinkedIn && wasOnLogin && !forceLogin });
     }
     if (event === 'SIGNED_OUT') {
       window._currentSession = null;
