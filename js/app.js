@@ -816,7 +816,7 @@ async function fetchDraftFromBackend(btn) {
   btn.textContent = "Generating...";
   btn.disabled = true;
   try {
-    const res = await fetch("http://localhost:8000/api/draft/generate", {
+    const res = await fetch("/api/draft/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1090,7 +1090,7 @@ window.handleLogin = async function() {
   err.style.display = "none";
   
   try {
-    const res = await fetch("http://localhost:8000/api/auth/login", {
+    const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: user, password: pass })
@@ -1875,8 +1875,7 @@ async function _routeSession(session) {
   if (!session) { showScreen('landing'); return; }
 
   const identities  = session.user?.identities || [];
-  const hasLinkedIn = session.user?.app_metadata?.provider === 'linkedin_oidc' ||
-                      identities.some(i => i.provider === 'linkedin_oidc');
+  const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
   const hasGoogle   = identities.some(i => i.provider === 'google');
   if (!hasGoogle || !hasLinkedIn) {
     updateLoginButtonStates({ hasGoogle, hasLinkedIn });
@@ -1906,6 +1905,16 @@ async function _routeSession(session) {
   }
 }
 
+function getStoredSupabaseSession() {
+  try {
+    const key = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+    if (!key) return null;
+    return JSON.parse(localStorage.getItem(key));
+  } catch {
+    return null;
+  }
+}
+
 async function checkSessionAndRoute() {
   const sb = await initSupabase();
   if (!sb) { showScreen('landing'); return; }
@@ -1918,7 +1927,13 @@ async function checkSessionAndRoute() {
         localStorage.setItem('stride-linkedin-token', session.provider_token);
         localStorage.removeItem('stride-last-provider');
       }
-      await _routeSession(session || null);
+      // INITIAL_SESSION fires null during PKCE exchange — fall back to localStorage
+      let resolved = session;
+      if (!resolved && event === 'INITIAL_SESSION') {
+        resolved = getStoredSupabaseSession() || null;
+        if (resolved) console.log('routing from stored session, identities:', resolved.user?.identities?.map(i => i.provider));
+      }
+      await _routeSession(resolved);
     }
     if (event === 'SIGNED_OUT') {
       localStorage.removeItem('stride-linkedin-token');
@@ -2005,7 +2020,7 @@ async function savePostToSupabase(postText, pillar) {
   const { data: { session } } = await strideSupabase.auth.getSession();
   if (!session) return;
   await strideSupabase.from('posts').insert({
-    user_id: session.user.id,
+    author_user_id: session.user.id,
     text: postText,
     pillar: pillar || 'General',
     created_at: new Date().toISOString(),
@@ -2019,7 +2034,7 @@ async function loadUserPosts() {
   if (!session) return [];
   const { data, error } = await strideSupabase
     .from('posts').select('*')
-    .eq('user_id', session.user.id)
+    .eq('author_user_id', session.user.id)
     .order('created_at', { ascending: false });
   if (error) { console.error('loadUserPosts:', error.message); return []; }
   return data || [];
@@ -2594,7 +2609,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const uid = session.user.id;
       const [profileRes, postsRes] = await Promise.all([
         strideSupabase.from('profiles').select('*').eq('id', uid).single(),
-        strideSupabase.from('posts').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+        strideSupabase.from('posts').select('*').eq('author_user_id', uid).order('created_at', { ascending: false }),
       ]);
       const exportData = {
         exported_at: new Date().toISOString(),
@@ -2632,7 +2647,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const { data: { session } } = await strideSupabase.auth.getSession();
         if (session) {
           const uid = session.user.id;
-          await strideSupabase.from('posts').delete().eq('user_id', uid);
+          await strideSupabase.from('posts').delete().eq('author_user_id', uid);
           await strideSupabase.from('profiles').delete().eq('id', uid);
         }
         await strideSupabase.auth.signOut();
