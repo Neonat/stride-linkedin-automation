@@ -1878,8 +1878,7 @@ async function _routeSession(session) {
   const hasLinkedIn = session.user?.app_metadata?.provider === 'linkedin_oidc' ||
                       identities.some(i => i.provider === 'linkedin_oidc');
   const hasGoogle   = identities.some(i => i.provider === 'google');
-  if (!hasLinkedIn) {
-    // Session exists but LinkedIn not connected — stay on login so user can connect it.
+  if (!hasGoogle || !hasLinkedIn) {
     updateLoginButtonStates({ hasGoogle, hasLinkedIn });
     showScreen('login');
     return;
@@ -2478,13 +2477,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const sb = await initSupabase();
     console.log('supabase init', !!sb);
     if (!sb) { console.log('google: supabase init failed, returning'); if (errEl) errEl.hidden = false; return; }
-    const { error } = await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        scopes: 'https://www.googleapis.com/auth/calendar.readonly',
-        redirectTo: window.location.origin,
-      },
-    });
+    const opts = { provider: 'google', options: { scopes: 'https://www.googleapis.com/auth/calendar.readonly', redirectTo: window.location.origin } };
+    const { error } = window._currentSession
+      ? await sb.auth.linkIdentity(opts)
+      : await sb.auth.signInWithOAuth(opts);
     if (error) {
       console.error('Google auth error:', error.message);
       if (errEl) errEl.hidden = false;
@@ -2502,13 +2498,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log('supabase init', !!sb);
     if (!sb) { console.log('linkedin: supabase init failed, returning'); if (errEl) errEl.hidden = false; return; }
     localStorage.setItem('stride-last-provider', 'linkedin_oidc');
-    const { error } = await sb.auth.signInWithOAuth({
-      provider: 'linkedin_oidc',
-      options: {
-        redirectTo: window.location.origin,
-        scopes: 'w_member_social',
-      },
-    });
+    const opts = { provider: 'linkedin_oidc', options: { redirectTo: window.location.origin, scopes: 'w_member_social' } };
+    const { error } = window._currentSession
+      ? await sb.auth.linkIdentity(opts)
+      : await sb.auth.signInWithOAuth(opts);
     if (error) {
       console.error('LinkedIn auth error:', error.message);
       localStorage.removeItem('stride-last-provider');
