@@ -863,12 +863,23 @@ async function publishToLinkedIn(btn) {
 
     // ── Step 2: Publish to LinkedIn ───────────────────────────────────────
     btn.innerHTML = spinner + "Publishing…";
+
+    const { data: { session } } = await strideSupabase.auth.getSession();
+    const linkedInToken = session?.provider_token;
+    if (!linkedInToken) {
+      _showPublishError("Your LinkedIn session has expired. Please sign out and sign back in to reconnect.");
+      return;
+    }
+
     let pubData;
     try {
       const pubRes = await fetch("/api/publish", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ text, linkedInToken }),
       });
       pubData = await pubRes.json();
     } catch {
@@ -877,7 +888,11 @@ async function publishToLinkedIn(btn) {
     }
 
     if (!pubData.ok) {
-      _showPublishError(`Publish failed: ${pubData.error || "Unknown error"}`);
+      if (pubData.error === "REVOKED_TOKEN") {
+        _showPublishError("Your LinkedIn session has expired. Please sign out and sign back in to reconnect.");
+      } else {
+        _showPublishError("Could not publish to LinkedIn. Please try again.");
+      }
       return;
     }
 
