@@ -2486,8 +2486,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const sb = await initSupabase();
     if (!sb) return;
     const { data: { session } } = await sb.auth.getSession();
-    const identities = session?.user?.identities || [];
-    if (identities.some(i => i.provider === 'google')) return; // Already connected
+    if (session?.user?.app_metadata?.provider === 'google') return; // Google already the active provider
     const opts = {
       provider: 'google',
       options: {
@@ -2513,8 +2512,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
     const { data: { session } } = await sb.auth.getSession();
-    const identities = session?.user?.identities || [];
-    if (identities.some(i => i.provider === 'linkedin_oidc')) return; // Already connected
+    if (session?.user?.app_metadata?.provider === 'linkedin_oidc') return; // Already the active provider
     const opts = {
       provider: 'linkedin_oidc',
       options: { redirectTo: window.location.origin },
