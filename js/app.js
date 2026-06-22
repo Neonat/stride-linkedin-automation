@@ -1857,44 +1857,38 @@ function updateLoginButtonStates({ hasGoogle, hasLinkedIn }) {
 }
 
 // ── Route after auth ────────────────────────────────────────────────────────
-async function _routeSession(session, { playLoading = false } = {}) {
+async function _routeSession(session) {
   window._currentSession = session;
   if (!session) { showScreen('landing'); return; }
 
   const identities  = session.user?.identities || [];
-  // hasLinkedIn: true when LinkedIn is either the primary session provider OR a linked
-  // identity on the account. The identities check is needed because Supabase keeps
-  // app_metadata.provider as 'google' when LinkedIn is linked to an existing Google
-  // account (same email), so checking only app_metadata.provider always returns false.
   const hasLinkedIn = session.user?.app_metadata?.provider === 'linkedin_oidc' ||
                       identities.some(i => i.provider === 'linkedin_oidc');
   const hasGoogle   = identities.some(i => i.provider === 'google');
+  const cachedToken = localStorage.getItem('stride-linkedin-token');
+
+  if (!hasLinkedIn && !cachedToken) {
+    // Session exists but LinkedIn not connected — stay on login so user can connect it.
+    updateLoginButtonStates({ hasGoogle, hasLinkedIn });
+    showScreen('login');
+    return;
+  }
 
   try {
-    if (hasLinkedIn && hasGoogle) {
-      if (playLoading) {
-        await playLoadingAndReveal(session);
-      } else {
-        updateUserUI(session.user);
-        const profile = await loadProfile();
-        if (profile) {
-          window._currentProfile = profile;
-          populateDashboard(profile, session);
-          loadCalendarEvents().then(events => {
-            renderCalendarEvents(events);
-            const nudge = document.getElementById('gcal-nudge-card');
-            if (nudge) nudge.style.display = 'none';
-          });
-          loadUserPosts().then(posts => { window._linkedInPosts = posts; });
-          showScreen('home');
-        } else {
-          showScreen('onboarding');
-        }
-      }
+    updateUserUI(session.user);
+    const profile = await loadProfile();
+    if (profile) {
+      window._currentProfile = profile;
+      populateDashboard(profile, session);
+      loadCalendarEvents().then(events => {
+        renderCalendarEvents(events);
+        const nudge = document.getElementById('gcal-nudge-card');
+        if (nudge) nudge.style.display = 'none';
+      });
+      loadUserPosts().then(posts => { window._linkedInPosts = posts; });
+      showScreen('home');
     } else {
-      // One or both providers still missing — stay on login with current state shown
-      updateLoginButtonStates({ hasGoogle, hasLinkedIn });
-      showScreen('login');
+      showScreen('onboarding');
     }
   } catch (err) {
     console.error('_routeSession error:', err);
@@ -1902,78 +1896,25 @@ async function _routeSession(session, { playLoading = false } = {}) {
   }
 }
 
-async function checkSessionAndRoute({ forceLogin = false } = {}) {
+async function checkSessionAndRoute() {
   const sb = await initSupabase();
   if (!sb) { showScreen('landing'); return; }
 
-  // Guard against double-routing: INITIAL_SESSION + SIGNED_IN both fire on an
-  // OAuth return. Without this flag the forceLogin setTimeout and the SIGNED_IN
-  // handler both call _routeSession, the second one with a stale session that may
-  // have hasLinkedIn=false, causing showScreen('login') to clear the active screen
-  // mid-animation and leave the page blank.
-  let _routed = false;
-
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-      const identities  = session?.user?.identities || [];
-      const hasLinkedIn = session?.user?.app_metadata?.provider === 'linkedin_oidc' ||
-                          identities.some(i => i.provider === 'linkedin_oidc');
-      const hasGoogle   = identities.some(i => i.provider === 'google');
-
-      // Persist the LinkedIn provider_token to localStorage the moment it arrives.
-      // session.provider_token belongs to whichever OAuth completed most recently,
-      // so it becomes the Google token once Google Calendar is linked — we must
-      // capture it before that happens. stride-last-provider tags which OAuth just
-      // completed so we only store when we know it's actually LinkedIn's token.
-      if (session?.provider_token) {
-        const lastProvider = localStorage.getItem('stride-last-provider');
-        if (lastProvider === 'linkedin_oidc') {
-          localStorage.setItem('stride-linkedin-token', session.provider_token);
-          localStorage.removeItem('stride-last-provider');
-        }
+      // Cache the LinkedIn provider_token immediately on OAuth return, before any
+      // subsequent Google OAuth can overwrite session.provider_token.
+      if (session?.provider_token && localStorage.getItem('stride-last-provider') === 'linkedin_oidc') {
+        localStorage.setItem('stride-linkedin-token', session.provider_token);
+        localStorage.removeItem('stride-last-provider');
       }
-
-      if (!session) {
-        // No session on initial load — show landing
-        showScreen('landing');
-        return;
-      }
-
-      if (forceLogin && event === 'INITIAL_SESSION') {
-        // Returning from OAuth redirect — show login with connected-state badges.
-        updateLoginButtonStates({ hasGoogle, hasLinkedIn });
-        showScreen('login');
-        if (hasLinkedIn && hasGoogle) {
-          // Both providers connected — auto-advance after a brief pause so the
-          // user can see "Both connected ✓" before navigating.
-          setTimeout(() => {
-            if (_routed) return;
-            _routed = true;
-            _routeSession(session, { playLoading: false });
-          }, 1500);
-        }
-        // If only one provider: stay on login so user can connect the other.
-        return;
-      }
-
-      // Prevent SIGNED_IN from double-routing with the setTimeout above.
-      // Allow USER_UPDATED through unconditionally so that LinkedIn disconnect
-      // (which fires USER_UPDATED mid-session) always re-routes correctly.
-      if (forceLogin && _routed && event === 'SIGNED_IN') return;
-      if (forceLogin && event !== 'USER_UPDATED') { _routed = true; }
-
-      const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
-      await _routeSession(session, { playLoading: hasLinkedIn && wasOnLogin && !forceLogin });
+      await _routeSession(session || null);
     }
     if (event === 'SIGNED_OUT') {
-      try {
-        window._currentSession = null;
-        window._currentProfile = null;
-        updateLoginButtonStates({ hasGoogle: false, hasLinkedIn: false });
-      } catch (err) {
-        console.error('SIGNED_OUT cleanup error:', err);
-      }
-      showScreen('login');
+      localStorage.removeItem('stride-linkedin-token');
+      window._currentSession = null;
+      window._currentProfile = null;
+      showScreen('landing');
     }
   });
 }
@@ -2193,7 +2134,6 @@ async function _refreshPrivacyTab() {
 async function _reconnectGcal() {
   localStorage.removeItem('stride-gcal-disconnected');
   if (!strideSupabase) return;
-  localStorage.setItem('stride-oauth-pending', '1');
   const { error } = await strideSupabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -2536,15 +2476,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { data: { session } } = await sb.auth.getSession();
     const identities = session?.user?.identities || [];
     if (identities.some(i => i.provider === 'google')) return; // Already linked
-    const opts = {
+    const { error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
         scopes: 'https://www.googleapis.com/auth/calendar.readonly',
         redirectTo: window.location.origin,
       },
-    };
-    localStorage.setItem('stride-oauth-pending', '1');
-    const { error } = await sb.auth.signInWithOAuth(opts);
+    });
     if (error) {
       console.error('Google auth error:', error.message);
       if (errEl) errEl.hidden = false;
@@ -2560,13 +2498,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { data: { session } } = await sb.auth.getSession();
     const identities = session?.user?.identities || [];
     if (identities.some(i => i.provider === 'linkedin_oidc')) return; // Already linked
-    const opts = {
+    localStorage.setItem('stride-last-provider', 'linkedin_oidc');
+    const { error } = await sb.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: { redirectTo: window.location.origin },
-    };
-    localStorage.setItem('stride-oauth-pending', '1');
-    localStorage.setItem('stride-last-provider', 'linkedin_oidc');
-    const { error } = await sb.auth.signInWithOAuth(opts);
+    });
     if (error) {
       console.error('LinkedIn auth error:', error.message);
       localStorage.removeItem('stride-last-provider');
@@ -2606,7 +2542,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById('btn-reconnect-linkedin')?.addEventListener('click', async () => {
     const sb = await initSupabase();
     if (!sb) return;
-    localStorage.setItem('stride-oauth-pending', '1');
     localStorage.setItem('stride-last-provider', 'linkedin_oidc');
     await sb.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
@@ -2713,7 +2648,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       window._currentSession = null;
       window._currentProfile = null;
       localStorage.removeItem('stride-gcal-disconnected');
-      showScreen('login');
+      localStorage.removeItem('stride-linkedin-token');
+      showScreen('landing');
     } catch (err) {
       console.error('Delete account error:', err);
       confirmBtn.disabled = false;
@@ -2752,15 +2688,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     playIntroAnimation();
   });
 
-  // Show landing immediately so the gradient is never visible while Supabase
-  // initialises. checkSessionAndRoute overrides this once the session state is known.
+  // Show landing immediately so the gradient is never visible while Supabase initialises.
   showScreen('landing');
-
-  if (isFirstVisit) {
-    checkSessionAndRoute();
-  } else {
-    const fromOAuth = !!localStorage.getItem('stride-oauth-pending');
-    if (fromOAuth) localStorage.removeItem('stride-oauth-pending');
-    checkSessionAndRoute({ forceLogin: fromOAuth });
-  }
+  checkSessionAndRoute();
 });
