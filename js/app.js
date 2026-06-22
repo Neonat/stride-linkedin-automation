@@ -2405,11 +2405,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Detect OAuth errors returned in the URL (e.g. access_denied)
   const _oauthParams = new URLSearchParams(window.location.search);
-  const _oauthError  = _oauthParams.get(‘error’) || new URLSearchParams(window.location.hash.slice(1)).get(‘error’);
+  const _oauthError  = _oauthParams.get('error') || new URLSearchParams(window.location.hash.slice(1)).get('error');
   if (_oauthError) {
-    history.replaceState(null, ‘’, window.location.pathname);
+    history.replaceState(null, '', window.location.pathname);
     requestAnimationFrame(() => {
-      const errEl = document.getElementById(‘login-error’);
+      const errEl = document.getElementById('login-error');
       if (errEl) errEl.hidden = false;
     });
   }
