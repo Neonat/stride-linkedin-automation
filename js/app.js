@@ -159,6 +159,15 @@ function showScreen(id) {
   }
   // Connect screen has real backend — initialise on every visit
   if (id === "connect") Connect.init();
+  // Reset to General tab and refresh privacy data each time settings is opened
+  if (id === "settings") {
+    document.querySelectorAll('.settings-inner-tab').forEach(t => t.classList.toggle('active', t.dataset.settingsTab === 'general'));
+    const genPanel = document.getElementById('settings-tab-general');
+    const pvtPanel = document.getElementById('settings-tab-privacy');
+    if (genPanel) genPanel.hidden = false;
+    if (pvtPanel) pvtPanel.hidden = true;
+    _refreshPrivacyTab();
+  }
 }
 
 /* ─────────────────────────────────────────
@@ -1920,6 +1929,7 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
 ───────────────────────────────────────── */
 async function loadCalendarEvents() {
   if (!strideSupabase) return [];
+  if (localStorage.getItem('stride-gcal-disconnected') === 'true') return [];
   const { data: { session } } = await strideSupabase.auth.getSession();
   const token = session?.provider_token;
   if (!token) return [];
@@ -2064,6 +2074,71 @@ INSTRUCTIONS:
 - LinkedIn post format: hook (1-2 lines) → story (3-5 bullet points or short paragraphs) → call to action
 
 When I give you a topic or event, draft a LinkedIn post in my voice.`.trim();
+}
+
+/* ─────────────────────────────────────────
+   DATA & PRIVACY TAB
+───────────────────────────────────────── */
+async function _refreshPrivacyTab() {
+  if (!strideSupabase) return;
+  const { data: { session } } = await strideSupabase.auth.getSession();
+  const user = session?.user;
+  const meta = user?.user_metadata || {};
+
+  // LinkedIn user info
+  const name  = meta.full_name || meta.name || user?.email || '—';
+  const email = user?.email || '—';
+  const avatarUrl = meta.avatar_url || meta.picture || '';
+  const nameEl   = document.getElementById('dp-linkedin-name');
+  const emailEl  = document.getElementById('dp-linkedin-email');
+  const avatarEl = document.getElementById('dp-linkedin-avatar');
+  if (nameEl)   nameEl.textContent  = name;
+  if (emailEl)  emailEl.textContent = email;
+  if (avatarEl && avatarUrl) {
+    avatarEl.style.backgroundImage = `url(${avatarUrl})`;
+    avatarEl.style.backgroundSize  = 'cover';
+    avatarEl.style.backgroundPosition = 'center';
+    avatarEl.textContent = '';
+  } else if (avatarEl) {
+    const initials = name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    avatarEl.textContent = initials || 'LI';
+  }
+
+  // Google Calendar status
+  const gcalStatus  = document.getElementById('dp-gcal-status');
+  const disconnectBtn = document.getElementById('btn-disconnect-gcal');
+  const reconnectMsg  = document.getElementById('dp-gcal-reconnect');
+  const isGcalDisconnected = localStorage.getItem('stride-gcal-disconnected') === 'true';
+  if (gcalStatus) {
+    if (isGcalDisconnected) {
+      gcalStatus.textContent = 'Disconnected';
+      if (disconnectBtn) disconnectBtn.disabled = true;
+      if (reconnectMsg)  reconnectMsg.hidden = false;
+    } else if (session?.provider_token) {
+      gcalStatus.textContent = 'Connected ✓';
+      gcalStatus.style.color = '#27AE60';
+      if (disconnectBtn) disconnectBtn.disabled = false;
+      if (reconnectMsg)  reconnectMsg.hidden = true;
+    } else {
+      gcalStatus.textContent = 'Not connected';
+      if (disconnectBtn) disconnectBtn.disabled = true;
+      if (reconnectMsg)  reconnectMsg.hidden = true;
+    }
+  }
+}
+
+async function _reconnectGcal() {
+  localStorage.removeItem('stride-gcal-disconnected');
+  if (!strideSupabase) return;
+  localStorage.setItem('stride-oauth-pending', '1');
+  const { error } = await strideSupabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      scopes: 'https://www.googleapis.com/auth/calendar.readonly',
+      redirectTo: window.location.origin,
+    },
+  });
+  if (error) console.error('Google Calendar reconnect error:', error.message);
 }
 
 function showSuccessModal() {
@@ -2416,6 +2491,121 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error('LinkedIn auth error:', error.message);
       const sub = document.getElementById('login-subtext');
       if (sub) sub.textContent = 'LinkedIn sign-in failed: ' + error.message;
+    }
+  });
+
+  // Settings logout button
+  document.getElementById('btn-settings-logout')?.addEventListener('click', async () => {
+    if (strideSupabase) await strideSupabase.auth.signOut();
+    showScreen('login');
+  });
+
+  // Settings inner tabs (General / Data & Privacy)
+  document.querySelectorAll('.settings-inner-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.settings-inner-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.settingsTab;
+      document.getElementById('settings-tab-general').hidden  = (target !== 'general');
+      document.getElementById('settings-tab-privacy').hidden  = (target !== 'privacy');
+    });
+  });
+
+  // Disconnect LinkedIn — signs out entirely
+  document.getElementById('btn-disconnect-linkedin')?.addEventListener('click', async () => {
+    if (strideSupabase) await strideSupabase.auth.signOut();
+    window._currentSession = null;
+    window._currentProfile = null;
+    showScreen('login');
+  });
+
+  // Disconnect Google Calendar — sets a local flag; does not sign the user out
+  document.getElementById('btn-disconnect-gcal')?.addEventListener('click', () => {
+    localStorage.setItem('stride-gcal-disconnected', 'true');
+    const statusEl = document.getElementById('dp-gcal-status');
+    if (statusEl) statusEl.textContent = 'Disconnected';
+    const disconnectBtn = document.getElementById('btn-disconnect-gcal');
+    if (disconnectBtn) disconnectBtn.disabled = true;
+    const reconnectMsg = document.getElementById('dp-gcal-reconnect');
+    if (reconnectMsg) reconnectMsg.hidden = false;
+    // Update the dashboard calendar card
+    const evList = document.getElementById('upcoming-events-list');
+    if (evList) evList.innerHTML = '<p class="text-caption text-muted" style="text-align:center;padding:var(--space-4) 0;">Google Calendar disconnected. <a href="#" id="dashboard-gcal-reconnect" style="color:var(--color-stride-blue);">Reconnect</a></p>';
+    document.getElementById('dashboard-gcal-reconnect')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await _reconnectGcal();
+    });
+  });
+
+  // Reconnect Google Calendar from privacy tab
+  document.getElementById('btn-reconnect-gcal')?.addEventListener('click', async () => {
+    await _reconnectGcal();
+  });
+
+  // Export my data
+  document.getElementById('btn-export-data')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-export-data');
+    if (!strideSupabase) return;
+    btn.disabled = true;
+    btn.textContent = 'Exporting…';
+    try {
+      const { data: { session } } = await strideSupabase.auth.getSession();
+      if (!session) { btn.textContent = 'Export my data'; btn.disabled = false; return; }
+      const uid = session.user.id;
+      const [profileRes, postsRes] = await Promise.all([
+        strideSupabase.from('profiles').select('*').eq('id', uid).single(),
+        strideSupabase.from('posts').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+      ]);
+      const exportData = {
+        exported_at: new Date().toISOString(),
+        profile: profileRes.data || null,
+        posts:   postsRes.data  || [],
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `stride-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      btn.textContent = 'Export my data';
+      btn.disabled = false;
+    }
+  });
+
+  // Delete my account — show confirmation modal
+  document.getElementById('btn-delete-account')?.addEventListener('click', () => {
+    document.getElementById('modal-delete-account').hidden = false;
+  });
+  document.getElementById('btn-delete-cancel')?.addEventListener('click', () => {
+    document.getElementById('modal-delete-account').hidden = true;
+  });
+  document.getElementById('btn-delete-confirm')?.addEventListener('click', async () => {
+    const confirmBtn = document.getElementById('btn-delete-confirm');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Deleting…';
+    try {
+      if (strideSupabase) {
+        const { data: { session } } = await strideSupabase.auth.getSession();
+        if (session) {
+          const uid = session.user.id;
+          await strideSupabase.from('posts').delete().eq('user_id', uid);
+          await strideSupabase.from('profiles').delete().eq('id', uid);
+        }
+        await strideSupabase.auth.signOut();
+      }
+      document.getElementById('modal-delete-account').hidden = true;
+      window._currentSession = null;
+      window._currentProfile = null;
+      localStorage.removeItem('stride-gcal-disconnected');
+      showScreen('login');
+    } catch (err) {
+      console.error('Delete account error:', err);
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Delete my account';
     }
   });
 

@@ -1354,80 +1354,176 @@
 ════════════════════════════════════════════════════ -->
 <section id="screen-settings" class="screen">
   <div class="mobile-wrap wrap-dashboard" style="padding-top: var(--space-6); max-width: 600px;">
-    
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-6);">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-5);">
       <p class="text-h3" style="margin:0;">Settings</p>
-      <button class="btn btn-ghost" data-goto="login">Log out</button>
+      <button class="btn btn-ghost" id="btn-settings-logout">Log out</button>
     </div>
 
-    <div class="card" style="margin-bottom:var(--space-6);">
-      <p class="section-label">Your Profile</p>
-      <div style="display:flex; align-items:center; gap:var(--space-4); margin-top:var(--space-4);">
-        <div class="avatar avatar-lg" id="settings-avatar" style="width:64px; height:64px; font-size:24px;">AT</div>
-        <div>
-          <p id="settings-name" style="font-weight:600; font-size:18px; margin:0; color:var(--text-primary);">Alex Tan</p>
-          <p id="settings-headline" class="text-secondary" style="margin:4px 0 0 0;">Final-year CS student building in AI</p>
+    <!-- Inner tab switcher -->
+    <div class="settings-inner-tabs" style="margin-bottom:var(--space-5);">
+      <button class="settings-inner-tab active" data-settings-tab="general">General</button>
+      <button class="settings-inner-tab" data-settings-tab="privacy">Data &amp; Privacy</button>
+    </div>
+
+    <!-- ── TAB: GENERAL ── -->
+    <div id="settings-tab-general">
+
+      <div class="card" style="margin-bottom:var(--space-6);">
+        <p class="section-label">Your Profile</p>
+        <div style="display:flex; align-items:center; gap:var(--space-4); margin-top:var(--space-4);">
+          <div class="avatar avatar-lg" id="settings-avatar" style="width:64px; height:64px; font-size:24px;">AT</div>
+          <div>
+            <p id="settings-name" style="font-weight:600; font-size:18px; margin:0; color:var(--text-primary);">Alex Tan</p>
+            <p id="settings-headline" class="text-secondary" style="margin:4px 0 0 0;">Final-year CS student building in AI</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="card" style="margin-bottom:var(--space-6);">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <p class="section-label" style="margin:0;">Brand Pillars</p>
-        <button class="btn btn-ghost btn-inline" data-goto="onboarding" style="font-size:12px;">Edit</button>
-      </div>
-      <div style="display:flex; gap:var(--space-2); margin-top:var(--space-4); flex-wrap:wrap;">
-        <span class="chip chip-technical" style="pointer-events:none;">Technical</span>
-        <span class="chip chip-leadership" style="pointer-events:none;">Leadership</span>
-        <span class="chip chip-community" style="pointer-events:none;">Community</span>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:var(--space-6);">
-      <p class="section-label">Export your persona</p>
-      <p class="text-caption text-muted" style="margin:var(--space-2) 0 var(--space-4);">Copy your persona prompt to use in ChatGPT, Claude, or any AI tool to generate on-brand content.</p>
-      <button class="btn btn-secondary" id="btn-export-persona" style="width:100%;">Copy persona prompt</button>
-      <p id="export-persona-feedback" class="text-caption text-muted" style="text-align:center;margin-top:var(--space-2);min-height:1.2em;"></p>
-    </div>
-
-    <div class="card" style="margin-bottom:var(--space-6);">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <p class="section-label" style="margin:0;">Connections</p>
-          <p class="text-caption text-muted" style="margin:4px 0 0 0;">Manage your Stride network and integrations</p>
+      <div class="card" style="margin-bottom:var(--space-6);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <p class="section-label" style="margin:0;">Brand Pillars</p>
+          <button class="btn btn-ghost btn-inline" data-goto="onboarding" style="font-size:12px;">Edit</button>
         </div>
-        <button class="btn btn-secondary btn-inline" data-goto="connect" style="width:auto;">Open</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <p class="section-label">Preferences</p>
-      
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:var(--space-4) 0; border-bottom:1px solid var(--border-default);">
-        <div>
-          <p style="font-weight:500; font-size:14px; margin:0;">Dark Mode</p>
-          <p class="text-caption text-muted" style="margin:2px 0 0 0;">Toggle the app's visual theme</p>
-        </div>
-        <button id="theme-toggle-settings" class="btn btn-ghost" style="padding:var(--space-2);">
-          Toggle Theme
-        </button>
-      </div>
-
-      <div style="display:flex; justify-content:space-between; align-items:center; padding-top:var(--space-4);">
-        <div>
-          <p style="font-weight:500; font-size:14px; margin:0;">Notifications</p>
-          <p class="text-caption text-muted" style="margin:2px 0 0 0;">Moment alerts and streak nudges</p>
-        </div>
-        <!-- Fake toggle switch -->
-        <div style="width:36px; height:20px; background:var(--color-stride-blue); border-radius:10px; position:relative; cursor:pointer;">
-          <div style="width:16px; height:16px; background:#fff; border-radius:50%; position:absolute; top:2px; right:2px;"></div>
+        <div style="display:flex; gap:var(--space-2); margin-top:var(--space-4); flex-wrap:wrap;">
+          <span class="chip chip-technical" style="pointer-events:none;">Technical</span>
+          <span class="chip chip-leadership" style="pointer-events:none;">Leadership</span>
+          <span class="chip chip-community" style="pointer-events:none;">Community</span>
         </div>
       </div>
-      
-    </div>
+
+      <div class="card" style="margin-bottom:var(--space-6);">
+        <p class="section-label">Export your persona</p>
+        <p class="text-caption text-muted" style="margin:var(--space-2) 0 var(--space-4);">Copy your persona prompt to use in ChatGPT, Claude, or any AI tool to generate on-brand content.</p>
+        <button class="btn btn-secondary" id="btn-export-persona" style="width:100%;">Copy persona prompt</button>
+        <p id="export-persona-feedback" class="text-caption text-muted" style="text-align:center;margin-top:var(--space-2);min-height:1.2em;"></p>
+      </div>
+
+      <div class="card" style="margin-bottom:var(--space-6);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <p class="section-label" style="margin:0;">Connections</p>
+            <p class="text-caption text-muted" style="margin:4px 0 0 0;">Manage your Stride network and integrations</p>
+          </div>
+          <button class="btn btn-secondary btn-inline" data-goto="connect" style="width:auto;">Open</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="section-label">Preferences</p>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:var(--space-4) 0; border-bottom:1px solid var(--border-default);">
+          <div>
+            <p style="font-weight:500; font-size:14px; margin:0;">Dark Mode</p>
+            <p class="text-caption text-muted" style="margin:2px 0 0 0;">Toggle the app's visual theme</p>
+          </div>
+          <button id="theme-toggle-settings" class="btn btn-ghost" style="padding:var(--space-2);">
+            Toggle Theme
+          </button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:var(--space-4);">
+          <div>
+            <p style="font-weight:500; font-size:14px; margin:0;">Notifications</p>
+            <p class="text-caption text-muted" style="margin:2px 0 0 0;">Moment alerts and streak nudges</p>
+          </div>
+          <!-- Fake toggle switch -->
+          <div style="width:36px; height:20px; background:var(--color-stride-blue); border-radius:10px; position:relative; cursor:pointer;">
+            <div style="width:16px; height:16px; background:#fff; border-radius:50%; position:absolute; top:2px; right:2px;"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /settings-tab-general -->
+
+    <!-- ── TAB: DATA & PRIVACY ── -->
+    <div id="settings-tab-privacy" hidden>
+
+      <!-- Intro card -->
+      <div class="dp-intro-card" style="margin-bottom:var(--space-5);">
+        <p style="font-weight:700; font-size:15px; margin:0 0 6px; color:var(--text-primary);">Your data, your control.</p>
+        <p class="text-caption" style="margin:0; color:var(--text-secondary); line-height:1.6;">Stride connects to LinkedIn and Google Calendar to help you post consistently. We access only what we need, store only what's necessary, and never share your data with third parties. You can disconnect either integration or delete your account at any time.</p>
+      </div>
+
+      <!-- Section 1 — LinkedIn -->
+      <div class="card dp-section" style="margin-bottom:var(--space-4);">
+        <p class="section-label dp-section-label">LinkedIn</p>
+        <p class="text-caption text-muted" style="margin:var(--space-2) 0 var(--space-4); line-height:1.6;">We access your name, photo, and email to set up your profile. We can publish posts on your behalf — only when you explicitly click Publish. Your LinkedIn token is never saved to our database; it lives in your session only.</p>
+        <div class="dp-user-row" id="dp-linkedin-user" style="margin-bottom:var(--space-4);">
+          <div class="avatar dp-user-avatar" id="dp-linkedin-avatar">LI</div>
+          <div>
+            <p class="dp-user-name" id="dp-linkedin-name">—</p>
+            <p class="dp-user-email" id="dp-linkedin-email">—</p>
+          </div>
+        </div>
+        <button class="btn btn-danger" id="btn-disconnect-linkedin">Disconnect LinkedIn</button>
+      </div>
+
+      <!-- Section 2 — Google Calendar -->
+      <div class="card dp-section" style="margin-bottom:var(--space-4);">
+        <p class="section-label dp-section-label">Google Calendar</p>
+        <p class="text-caption text-muted" style="margin:var(--space-2) 0 var(--space-4); line-height:1.6;">We read your upcoming calendar events to suggest post moments. No calendar data is ever saved to our servers — it is fetched live each time your dashboard loads and discarded after display.</p>
+        <div class="dp-user-row" id="dp-gcal-user" style="margin-bottom:var(--space-4);">
+          <div class="dp-gcal-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div>
+            <p class="dp-user-name">Google Calendar</p>
+            <p class="dp-user-email" id="dp-gcal-status">Checking…</p>
+          </div>
+        </div>
+        <button class="btn btn-danger" id="btn-disconnect-gcal">Disconnect Google Calendar</button>
+        <p class="text-caption text-muted dp-gcal-reconnect" id="dp-gcal-reconnect" hidden style="margin-top:var(--space-3); text-align:center;">
+          Calendar disconnected. <button class="btn-link" id="btn-reconnect-gcal">Reconnect</button>
+        </p>
+      </div>
+
+      <!-- Section 3 — Your Data -->
+      <div class="card dp-section" style="margin-bottom:var(--space-4);">
+        <p class="section-label dp-section-label">What Stride stores</p>
+
+        <div class="dp-store-grid" style="margin:var(--space-4) 0 var(--space-5);">
+          <div class="dp-store-col dp-store-yes">
+            <p class="dp-store-heading">We store</p>
+            <ul>
+              <li>Your name &amp; email</li>
+              <li>Posts you've created</li>
+              <li>Your streak</li>
+              <li>Collab sessions</li>
+            </ul>
+          </div>
+          <div class="dp-store-col dp-store-no">
+            <p class="dp-store-heading">We do NOT store</p>
+            <ul>
+              <li>Your LinkedIn token</li>
+              <li>Your Google token</li>
+              <li>Calendar event content</li>
+              <li>Your passwords</li>
+            </ul>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" id="btn-export-data" style="margin-bottom:var(--space-3);">Export my data</button>
+        <button class="btn btn-danger" id="btn-delete-account">Delete my account</button>
+      </div>
+
+    </div><!-- /settings-tab-privacy -->
 
   </div>
 </section>
+
+<!-- Delete account confirmation modal -->
+<div id="modal-delete-account" class="dp-modal-overlay" hidden>
+  <div class="dp-modal-box">
+    <p style="font-weight:700; font-size:17px; margin:0 0 var(--space-3); color:var(--text-primary);">Delete your account?</p>
+    <p class="text-caption text-muted" style="margin:0 0 var(--space-6); line-height:1.6;">This will permanently delete all your Stride data including your posts, streak, and profile. This cannot be undone.</p>
+    <div style="display:flex; gap:var(--space-3);">
+      <button class="btn btn-ghost" id="btn-delete-cancel" style="flex:1;">Cancel</button>
+      <button class="btn btn-danger" id="btn-delete-confirm" style="flex:1;">Delete my account</button>
+    </div>
+  </div>
+</div>
 
 
 <!-- ═══════════════════════════════════════════════════
