@@ -2307,6 +2307,7 @@ function playIntroAnimation() {
 
     function finish() {
       done = true;
+      intro.style.pointerEvents = 'none';
       intro.style.display = 'none';
       intro.innerHTML = '';
       document.body.style.overflow = '';
@@ -2407,10 +2408,7 @@ window._resetIntro = () => { localStorage.removeItem('stride-visited'); location
 
 document.addEventListener("DOMContentLoaded", async () => {
   const isFirstVisit = !localStorage.getItem('stride-visited');
-  if (isFirstVisit) {
-    localStorage.setItem('stride-visited', 'true');
-    await playIntroAnimation();
-  }
+  if (isFirstVisit) localStorage.setItem('stride-visited', 'true');
 
   // Detect OAuth errors returned in the URL (e.g. access_denied)
   const _oauthParams = new URLSearchParams(window.location.search);
@@ -2683,7 +2681,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     playIntroAnimation();
   });
 
-  // Show landing immediately so the gradient is never visible while Supabase initialises.
+  // Show landing and start auth routing before playing the intro, so all handlers
+  // are wired and Supabase initialises regardless of animation state.
   showScreen('landing');
   checkSessionAndRoute();
+
+  // Play intro last (first visit only). Full-screen overlay covers landing;
+  // after it finishes, whatever screen auth routed to is visible.
+  if (isFirstVisit) {
+    await playIntroAnimation();
+  }
 });
