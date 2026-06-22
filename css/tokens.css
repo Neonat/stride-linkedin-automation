@@ -35,6 +35,9 @@
   --bg-surface:         #FFFFFF;
   --bg-surface-raised:  #FFFFFF;
   --border-default:     #E2E8EE;
+  /* Aliases used by screens.css (were undefined → transparent) */
+  --color-background-primary:   #FFFFFF;
+  --color-background-secondary: #F5F8FB;
   --border-active:      #2E7FB8;
   --text-primary:       #3D3D3D;
   --text-secondary:     #5A5A5A;
@@ -153,6 +156,8 @@
   --text-muted:         #A1B0C0;
   --action-primary:     #5BA3D0;
   --action-primary-hover: #2E7FB8;
+  --color-background-primary:   #1A2028;
+  --color-background-secondary: #0F1317;
 
   --shadow-sm:  0 1px 3px rgba(0,0,0,0.35);
   --shadow-md:  0 4px 14px rgba(0,0,0,0.40);

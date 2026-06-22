@@ -1711,6 +1711,7 @@ body:has(#screen-draft.active) #theme-toggle {
   align-items: center;
   justify-content: center;
   padding: var(--space-8);
+  background: var(--bg-surface);
 }
 
 .login-form-inner { width: 100%; max-width: 320px; }
