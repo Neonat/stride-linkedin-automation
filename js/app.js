@@ -405,6 +405,8 @@ function initPasteStep() {
             errorEl.textContent = data.error || "Something went wrong. Try again.";
             errorEl.hidden = false;
           }
+          const skipBtn = document.getElementById('btn-paste-skip');
+          if (skipBtn) skipBtn.hidden = false;
           return;
         }
 
@@ -416,10 +418,19 @@ function initPasteStep() {
           errorEl.textContent = "Could not reach the server. Check your connection.";
           errorEl.hidden = false;
         }
+        const skipBtn = document.getElementById('btn-paste-skip');
+        if (skipBtn) skipBtn.hidden = false;
       } finally {
         if (loading) loading.hidden = true;
         submitBtn.disabled = false;
       }
+    });
+  }
+
+  const skipBtn = document.getElementById('btn-paste-skip');
+  if (skipBtn) {
+    skipBtn.addEventListener('click', () => {
+      showProfileCard(null);
     });
   }
 }
@@ -2410,12 +2421,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const errEl = document.getElementById('login-error');
       if (errEl) errEl.hidden = false;
     });
-  }
-
-  // Returning users see "Log in" instead of "Start free" on the landing CTA
-  if (!isFirstVisit) {
-    const navCta = document.getElementById('btn-landing-nav-cta');
-    if (navCta) { navCta.textContent = 'Log in'; navCta.dataset.goto = 'login'; }
   }
 
   goToStep(1);

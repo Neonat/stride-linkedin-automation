@@ -161,7 +161,7 @@ class handler(StrideHandler):
         body = self._read_body()
         mode = (body.get("mode") or "build").strip().lower()
 
-        api_key = os.environ.get("AGNES_AI_TOKEN")
+        api_key = os.environ.get("AGNES_AI_TOKEN") or os.environ.get("AGNES_AI_TOKEN_2")
         if not api_key:
             return self._json(500, {"ok": False, "error": "AGNES_AI_TOKEN is not configured"})
         model = os.environ.get("AGNES_MODEL", _DEFAULT_MODEL)
