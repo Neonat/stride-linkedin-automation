@@ -327,8 +327,9 @@
           <span id="linkedin-btn-text">Continue with LinkedIn</span>
         </button>
 
+        <p id="login-error" hidden style="color:var(--color-red);font-size:13px;text-align:center;margin-top:var(--space-2);font-weight:500;">Does not seem to work, please try again</p>
         <p class="text-caption text-muted" id="login-subtext" style="text-align:center; margin-top:var(--space-2);">
-          Connect Google for Calendar + LinkedIn to post directly.
+          Connect both accounts to get started.
         </p>
       </div>
     </div>
@@ -1462,8 +1463,9 @@
             <p class="dp-user-email" id="dp-linkedin-email">—</p>
           </div>
         </div>
-        <p class="text-caption text-muted" style="margin:0; padding:var(--space-3) var(--space-4); background:rgba(0,0,0,0.03); border-radius:var(--radius-sm); line-height:1.5;">
-          LinkedIn is your sign-in method for Stride. To fully disconnect, use the <strong>Log out</strong> button at the top of Settings.
+        <button class="btn btn-danger" id="btn-disconnect-linkedin">Disconnect LinkedIn</button>
+        <p class="text-caption text-muted" id="dp-linkedin-disconnect-note" hidden style="margin-top:var(--space-3); text-align:center;">
+          LinkedIn disconnected. You'll be asked to reconnect when you return to the app.
         </p>
       </div>
 

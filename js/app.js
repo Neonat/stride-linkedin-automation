@@ -1845,11 +1845,11 @@ function updateLoginButtonStates({ hasGoogle, hasLinkedIn }) {
     if (hasLinkedIn && hasGoogle)
       sub.textContent = 'Both connected ✓ — signing you in…';
     else if (hasLinkedIn)
-      sub.textContent = 'LinkedIn connected ✓ — signing you in…';
+      sub.textContent = 'LinkedIn connected ✓ — now connect Google for Calendar.';
     else if (hasGoogle)
-      sub.textContent = 'Google Calendar connected ✓ — now sign in with LinkedIn to publish.';
+      sub.textContent = 'Google connected ✓ — now connect LinkedIn to publish.';
     else
-      sub.textContent = 'Sign in with LinkedIn to continue.';
+      sub.textContent = 'Connect both accounts to get started.';
   }
 }
 
@@ -1868,7 +1868,7 @@ async function _routeSession(session, { playLoading = false } = {}) {
   const hasGoogle   = identities.some(i => i.provider === 'google');
 
   try {
-    if (hasLinkedIn) {
+    if (hasLinkedIn && hasGoogle) {
       if (playLoading) {
         await playLoadingAndReveal(session);
       } else {
@@ -1889,6 +1889,7 @@ async function _routeSession(session, { playLoading = false } = {}) {
         }
       }
     } else {
+      // One or both providers still missing — stay on login with current state shown
       updateLoginButtonStates({ hasGoogle, hasLinkedIn });
       showScreen('login');
     }
@@ -1923,27 +1924,27 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
       }
 
       if (forceLogin && event === 'INITIAL_SESSION') {
-        // Returning from OAuth redirect — show login with connected-state badges,
-        // then route after a brief pause so the user can see the confirmation.
+        // Returning from OAuth redirect — show login with connected-state badges.
         updateLoginButtonStates({ hasGoogle, hasLinkedIn });
         showScreen('login');
-        if (hasLinkedIn) {
+        if (hasLinkedIn && hasGoogle) {
+          // Both providers connected — auto-advance after a brief pause so the
+          // user can see "Both connected ✓" before navigating.
           setTimeout(() => {
             if (_routed) return;
             _routed = true;
-            // Skip the loading animation here — the 1500ms pause already gives
-            // the user a moment to see "LinkedIn connected ✓" before advancing.
             _routeSession(session, { playLoading: false });
           }, 1500);
         }
-        // Google only: stay on login so user can sign in with LinkedIn
+        // If only one provider: stay on login so user can connect the other.
         return;
       }
 
-      // Prevent the SIGNED_IN / USER_UPDATED event from racing the setTimeout
-      // above when forceLogin is true (both would otherwise call _routeSession).
-      if (forceLogin && _routed) return;
-      if (forceLogin) { _routed = true; }
+      // Prevent SIGNED_IN from double-routing with the setTimeout above.
+      // Allow USER_UPDATED through unconditionally so that LinkedIn disconnect
+      // (which fires USER_UPDATED mid-session) always re-routes correctly.
+      if (forceLogin && _routed && event === 'SIGNED_IN') return;
+      if (forceLogin && event !== 'USER_UPDATED') { _routed = true; }
 
       const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
       await _routeSession(session, { playLoading: hasLinkedIn && wasOnLogin && !forceLogin });
@@ -2446,16 +2447,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     await playIntroAnimation();
   }
 
-  // Detect OAuth errors returned in the URL (e.g. Google access_denied)
+  // Detect OAuth errors returned in the URL (e.g. access_denied)
   const _oauthParams = new URLSearchParams(window.location.search);
-  const _oauthError  = _oauthParams.get('error') || new URLSearchParams(window.location.hash.slice(1)).get('error');
-  if (_oauthError === 'access_denied') {
-    // Clean up the URL without reloading
-    history.replaceState(null, '', window.location.pathname);
-    // Show on the login screen after init
+  const _oauthError  = _oauthParams.get(‘error’) || new URLSearchParams(window.location.hash.slice(1)).get(‘error’);
+  if (_oauthError) {
+    history.replaceState(null, ‘’, window.location.pathname);
     requestAnimationFrame(() => {
-      const sub = document.getElementById('login-subtext');
-      if (sub) sub.textContent = 'Google sign-in was blocked — the app hasn’t been verified by Google yet. Use LinkedIn to sign in instead.';
+      const errEl = document.getElementById(‘login-error’);
+      if (errEl) errEl.hidden = false;
     });
   }
 
@@ -2514,10 +2513,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Google sign-in (or link if already signed in with LinkedIn)
   document.getElementById('btn-google-signin')?.addEventListener('click', async () => {
+    const errEl = document.getElementById('login-error');
+    if (errEl) errEl.hidden = true;
     const sb = await initSupabase();
-    if (!sb) return;
+    if (!sb) { if (errEl) errEl.hidden = false; return; }
     const { data: { session } } = await sb.auth.getSession();
-    if (session?.user?.app_metadata?.provider === 'google') return; // Google already the active provider
+    const identities = session?.user?.identities || [];
+    if (identities.some(i => i.provider === 'google')) return; // Already linked
     const opts = {
       provider: 'google',
       options: {
@@ -2529,21 +2531,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { error } = await sb.auth.signInWithOAuth(opts);
     if (error) {
       console.error('Google auth error:', error.message);
-      const sub = document.getElementById('login-subtext');
-      if (sub) sub.textContent = 'Google sign-in failed: ' + error.message;
+      if (errEl) errEl.hidden = false;
     }
   });
 
   // LinkedIn sign-in (or link if already signed in with Google)
   document.getElementById('btn-linkedin-signin')?.addEventListener('click', async () => {
+    const errEl = document.getElementById('login-error');
+    if (errEl) errEl.hidden = true;
     const sb = await initSupabase();
-    if (!sb) {
-      const sub = document.getElementById('login-subtext');
-      if (sub) sub.textContent = 'Could not connect to server. Please try again.';
-      return;
-    }
+    if (!sb) { if (errEl) errEl.hidden = false; return; }
     const { data: { session } } = await sb.auth.getSession();
-    if (session?.user?.app_metadata?.provider === 'linkedin_oidc') return; // Already the active provider
+    const identities = session?.user?.identities || [];
+    if (identities.some(i => i.provider === 'linkedin_oidc')) return; // Already linked
     const opts = {
       provider: 'linkedin_oidc',
       options: { redirectTo: window.location.origin },
@@ -2552,9 +2552,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { error } = await sb.auth.signInWithOAuth(opts);
     if (error) {
       console.error('LinkedIn auth error:', error.message);
-      const sub = document.getElementById('login-subtext');
-      if (sub) sub.textContent = 'LinkedIn sign-in failed: ' + error.message;
+      if (errEl) errEl.hidden = false;
     }
+  });
+
+  // Disconnect LinkedIn from Settings > Data & Privacy
+  document.getElementById('btn-disconnect-linkedin')?.addEventListener('click', async () => {
+    const sb = await initSupabase();
+    if (!sb) return;
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+
+    const identities = session.user?.identities || [];
+    const liIdentity = identities.find(i => i.provider === 'linkedin_oidc');
+    if (!liIdentity) return;
+
+    const btn = document.getElementById('btn-disconnect-linkedin');
+    const note = document.getElementById('dp-linkedin-disconnect-note');
+    if (btn) { btn.disabled = true; btn.textContent = 'Disconnecting…'; }
+
+    const { error } = await sb.auth.unlinkIdentity(liIdentity);
+    if (error) {
+      console.error('Disconnect LinkedIn error:', error);
+      if (btn) { btn.disabled = false; btn.textContent = 'Disconnect LinkedIn'; }
+      return;
+    }
+
+    if (note) note.hidden = false;
+    // USER_UPDATED event fires from Supabase and re-routes the app to the login
+    // screen (hasLinkedIn=false) where the user can reconnect LinkedIn.
   });
 
   // "Reconnect LinkedIn" button shown when the publish error is an expired token
