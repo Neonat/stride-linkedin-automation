@@ -1919,7 +1919,8 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
     if (event === 'SIGNED_OUT') {
       window._currentSession = null;
       window._currentProfile = null;
-      showScreen('landing');
+      updateLoginButtonStates({ hasGoogle: false, hasLinkedIn: false });
+      showScreen('login');
     }
   });
 }
@@ -2519,7 +2520,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Settings logout button
   document.getElementById('btn-settings-logout')?.addEventListener('click', async () => {
     if (strideSupabase) await strideSupabase.auth.signOut();
-    showScreen('login');
+    // SIGNED_OUT event handler resets button states and routes to login
   });
 
   // Settings inner tabs (General / Data & Privacy)
