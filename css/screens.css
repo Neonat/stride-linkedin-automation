@@ -1877,6 +1877,7 @@ body:has(#screen-draft.active) #theme-toggle {
   z-index: 9999;
   padding: var(--space-5);
 }
+.dp-modal-overlay[hidden] { display: none !important; }
 .dp-modal-box {
   background: var(--bg-surface, #fff);
   border-radius: var(--radius-lg, 16px);
