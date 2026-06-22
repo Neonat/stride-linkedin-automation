@@ -1951,6 +1951,15 @@ async function loadCalendarEvents() {
 function renderCalendarEvents(events) {
   const container = document.getElementById('upcoming-events-list');
   if (!container) return;
+
+  if (localStorage.getItem('stride-gcal-disconnected') === 'true') {
+    container.innerHTML = `<p class="text-caption text-muted" style="text-align:center;padding:var(--space-3) 0;">Google Calendar disconnected. <a href="#" id="dashboard-gcal-reconnect" style="color:var(--color-stride-blue);text-decoration:none;font-weight:600;">Reconnect</a></p>`;
+    document.getElementById('dashboard-gcal-reconnect')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await _reconnectGcal();
+    });
+    return;
+  }
   if (!events.length) {
     container.innerHTML = '<p class="text-caption text-muted">No upcoming events found.</p>';
     return;
