@@ -2478,14 +2478,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const sb = await initSupabase();
     console.log('supabase init', !!sb);
     if (!sb) { console.log('google: supabase init failed, returning'); if (errEl) errEl.hidden = false; return; }
-    console.log('before getSession');
-    const { data: { session: gSession }, error: gSessionErr } = await sb.auth.getSession();
-    console.log('after getSession', { hasSession: !!gSession, error: gSessionErr, identities: gSession?.user?.identities?.map(i => i.provider) });
-    const identities = gSession?.user?.identities || [];
-    if (identities.some(i => i.provider === 'google')) {
-      console.log('google already linked, returning');
-      return;
-    }
     const { error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -2509,18 +2501,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const sb = await initSupabase();
     console.log('supabase init', !!sb);
     if (!sb) { console.log('linkedin: supabase init failed, returning'); if (errEl) errEl.hidden = false; return; }
-    console.log('before getSession');
-    const { data: { session: liSession }, error: liSessionErr } = await sb.auth.getSession();
-    console.log('after getSession', { hasSession: !!liSession, error: liSessionErr, identities: liSession?.user?.identities?.map(i => i.provider) });
-    const identities = liSession?.user?.identities || [];
-    if (identities.some(i => i.provider === 'linkedin_oidc')) {
-      console.log('linkedin already linked, returning');
-      return;
-    }
     localStorage.setItem('stride-last-provider', 'linkedin_oidc');
     const { error } = await sb.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: window.location.origin,
+        scopes: 'w_member_social',
+      },
     });
     if (error) {
       console.error('LinkedIn auth error:', error.message);
