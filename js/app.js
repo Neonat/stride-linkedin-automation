@@ -1852,10 +1852,12 @@ async function _routeSession(session, { playLoading = false } = {}) {
   if (!session) { showScreen('landing'); return; }
 
   const identities  = session.user?.identities || [];
-  // hasLinkedIn = LinkedIn is the CURRENT active provider (provider_token is LinkedIn's).
-  // Checking app_metadata.provider rather than identities prevents a stale Google
-  // provider_token (from connecting Calendar) from being mistaken for a LinkedIn token.
-  const hasLinkedIn = session.user?.app_metadata?.provider === 'linkedin_oidc';
+  // hasLinkedIn: true when LinkedIn is either the primary session provider OR a linked
+  // identity on the account. The identities check is needed because Supabase keeps
+  // app_metadata.provider as 'google' when LinkedIn is linked to an existing Google
+  // account (same email), so checking only app_metadata.provider always returns false.
+  const hasLinkedIn = session.user?.app_metadata?.provider === 'linkedin_oidc' ||
+                      identities.some(i => i.provider === 'linkedin_oidc');
   const hasGoogle   = identities.some(i => i.provider === 'google');
 
   if (hasLinkedIn) {
@@ -1895,7 +1897,8 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
       const identities  = session?.user?.identities || [];
-      const hasLinkedIn = session?.user?.app_metadata?.provider === 'linkedin_oidc';
+      const hasLinkedIn = session?.user?.app_metadata?.provider === 'linkedin_oidc' ||
+                          identities.some(i => i.provider === 'linkedin_oidc');
       const hasGoogle   = identities.some(i => i.provider === 'google');
 
       if (!session) {
