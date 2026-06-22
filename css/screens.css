@@ -945,6 +945,45 @@ body.on-landing .bg-blobs { display: none; }
   line-height: 1.5;
 }
 
+/* Publish error — full-width banner fixed just above the sticky publish bar */
+.draft-error-banner {
+  position: fixed;
+  bottom: 64px; /* sits above the ~64px tall sticky bar */
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: var(--color-red-light);
+  color: var(--color-red);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-red);
+}
+.draft-error-banner[hidden] { display: none; }
+
+.draft-error-reconnect {
+  flex-shrink: 0;
+  background: var(--color-red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 6px var(--space-3);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: auto;
+}
+.draft-error-reconnect[hidden] { display: none; }
+
+@media (min-width: 600px) {
+  .draft-error-banner {
+    bottom: calc(var(--space-4) + 64px);
+  }
+}
+
 /* Visuals */
 .visual-thumb {
   width: 100%;

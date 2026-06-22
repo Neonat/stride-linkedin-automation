@@ -826,16 +826,23 @@ async function fetchDraftFromBackend(btn) {
   }
 }
 
-function _showPublishError(msg) {
-  const el = document.getElementById("publish-error");
-  if (!el) return;
-  el.textContent = msg;
-  el.hidden = false;
+function _showPublishError(msg, { reconnect = false } = {}) {
+  const banner = document.getElementById("publish-error");
+  const msgEl  = document.getElementById("publish-error-msg");
+  const btnEl  = document.getElementById("btn-reconnect-linkedin");
+  if (!banner || !msgEl) return;
+  msgEl.textContent = msg;
+  if (btnEl) btnEl.hidden = !reconnect;
+  banner.hidden = false;
 }
 
 function _clearPublishError() {
-  const el = document.getElementById("publish-error");
-  if (el) { el.hidden = true; el.textContent = ""; }
+  const banner = document.getElementById("publish-error");
+  const msgEl  = document.getElementById("publish-error-msg");
+  const btnEl  = document.getElementById("btn-reconnect-linkedin");
+  if (banner) banner.hidden = true;
+  if (msgEl)  msgEl.textContent = "";
+  if (btnEl)  btnEl.hidden = true;
 }
 
 async function publishToLinkedIn(btn) {
@@ -876,7 +883,7 @@ async function publishToLinkedIn(btn) {
     const { data: { session } } = await strideSupabase.auth.getSession();
     const linkedInToken = session?.provider_token;
     if (!linkedInToken) {
-      _showPublishError("Your LinkedIn session has expired. Please sign out and sign back in to reconnect.");
+      _showPublishError("Your LinkedIn session has expired.", { reconnect: true });
       return;
     }
 
@@ -898,7 +905,7 @@ async function publishToLinkedIn(btn) {
 
     if (!pubData.ok) {
       if (pubData.error === "REVOKED_TOKEN") {
-        _showPublishError("Your LinkedIn session has expired. Please sign out and sign back in to reconnect.");
+        _showPublishError("Your LinkedIn session has expired.", { reconnect: true });
       } else {
         _showPublishError("Could not publish to LinkedIn. Please try again.");
       }
@@ -1860,30 +1867,34 @@ async function _routeSession(session, { playLoading = false } = {}) {
                       identities.some(i => i.provider === 'linkedin_oidc');
   const hasGoogle   = identities.some(i => i.provider === 'google');
 
-  if (hasLinkedIn) {
-    if (playLoading) {
-      await playLoadingAndReveal(session);
-    } else {
-      // Returning visit already done loading - go straight to home/onboarding
-      updateUserUI(session.user);
-      const profile = await loadProfile();
-      if (profile) {
-        window._currentProfile = profile;
-        populateDashboard(profile, session);
-        loadCalendarEvents().then(events => {
-          renderCalendarEvents(events);
-          const nudge = document.getElementById('gcal-nudge-card');
-          if (nudge) nudge.style.display = 'none';
-        });
-        loadUserPosts().then(posts => { window._linkedInPosts = posts; });
-        showScreen('home');
+  try {
+    if (hasLinkedIn) {
+      if (playLoading) {
+        await playLoadingAndReveal(session);
       } else {
-        showScreen('onboarding');
+        updateUserUI(session.user);
+        const profile = await loadProfile();
+        if (profile) {
+          window._currentProfile = profile;
+          populateDashboard(profile, session);
+          loadCalendarEvents().then(events => {
+            renderCalendarEvents(events);
+            const nudge = document.getElementById('gcal-nudge-card');
+            if (nudge) nudge.style.display = 'none';
+          });
+          loadUserPosts().then(posts => { window._linkedInPosts = posts; });
+          showScreen('home');
+        } else {
+          showScreen('onboarding');
+        }
       }
+    } else {
+      updateLoginButtonStates({ hasGoogle, hasLinkedIn });
+      showScreen('login');
     }
-  } else {
-    updateLoginButtonStates({ hasGoogle, hasLinkedIn });
-    showScreen('login');
+  } catch (err) {
+    console.error('_routeSession error:', err);
+    showScreen('landing');
   }
 }
 
@@ -1938,9 +1949,13 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
       await _routeSession(session, { playLoading: hasLinkedIn && wasOnLogin && !forceLogin });
     }
     if (event === 'SIGNED_OUT') {
-      window._currentSession = null;
-      window._currentProfile = null;
-      updateLoginButtonStates({ hasGoogle: false, hasLinkedIn: false });
+      try {
+        window._currentSession = null;
+        window._currentProfile = null;
+        updateLoginButtonStates({ hasGoogle: false, hasLinkedIn: false });
+      } catch (err) {
+        console.error('SIGNED_OUT cleanup error:', err);
+      }
       showScreen('login');
     }
   });
@@ -2542,6 +2557,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // "Reconnect LinkedIn" button shown when the publish error is an expired token
+  document.getElementById('btn-reconnect-linkedin')?.addEventListener('click', async () => {
+    const sb = await initSupabase();
+    if (!sb) return;
+    localStorage.setItem('stride-oauth-pending', '1');
+    await sb.auth.signInWithOAuth({
+      provider: 'linkedin_oidc',
+      options: { redirectTo: window.location.origin },
+    });
+  });
+
   // Settings logout button
   document.getElementById('btn-settings-logout')?.addEventListener('click', async () => {
     if (strideSupabase) await strideSupabase.auth.signOut();
@@ -2680,9 +2706,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     playIntroAnimation();
   });
 
+  // Show landing immediately so the gradient is never visible while Supabase
+  // initialises. checkSessionAndRoute overrides this once the session state is known.
+  showScreen('landing');
+
   if (isFirstVisit) {
-    // Don't unconditionally show landing — route based on session state
-    // (same as every other visit; if no session, checkSessionAndRoute shows landing)
     checkSessionAndRoute();
   } else {
     const fromOAuth = !!localStorage.getItem('stride-oauth-pending');
