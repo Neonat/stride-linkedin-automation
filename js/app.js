@@ -2423,6 +2423,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // Returning users see "Log in" instead of "Start free" on the landing CTA
+  if (!isFirstVisit) {
+    const navCta = document.getElementById('btn-landing-nav-cta');
+    if (navCta) { navCta.textContent = 'Log in'; navCta.dataset.goto = 'login'; }
+  }
+
   goToStep(1);
   initOnboarding();
   initFootprintLoader();
