@@ -1889,35 +1889,32 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
   const sb = await initSupabase();
   if (!sb) { showScreen('landing'); return; }
 
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    if (forceLogin) {
-      // Returning from OAuth redirect — flash login screen showing which provider
-      // connected, then auto-proceed after 1.5s (no second provider required)
-      const identities  = session.user?.identities || [];
-      const hasLinkedIn = session.user?.app_metadata?.provider === 'linkedin_oidc';
-      const hasGoogle   = identities.some(i => i.provider === 'google');
-      updateLoginButtonStates({ hasGoogle, hasLinkedIn });
-      showScreen('login');
-      if (hasLinkedIn) {
-        // LinkedIn is the active provider — proceed to dashboard after brief flash
-        setTimeout(() => _routeSession(session, { playLoading: true }), 1500);
-        return; // skip wiring onAuthStateChange — we're about to proceed
-      }
-      // Google only (Calendar connected but LinkedIn not active) — stay on login
-      // so the user signs in with LinkedIn to get a publishing token
-    } else {
-      await _routeSession(session, { playLoading: false });
-    }
-  } else {
-    showScreen('landing');
-  }
-
+  // Use onAuthStateChange as the primary session detection mechanism.
+  // INITIAL_SESSION fires after the Supabase client processes the #access_token
+  // hash on OAuth redirect — getSession() called before that completes returns null.
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+    if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
       const identities  = session?.user?.identities || [];
       const hasLinkedIn = session?.user?.app_metadata?.provider === 'linkedin_oidc';
       const hasGoogle   = identities.some(i => i.provider === 'google');
+
+      if (!session) {
+        // No session on initial load — show landing
+        showScreen('landing');
+        return;
+      }
+
+      if (forceLogin && event === 'INITIAL_SESSION') {
+        // Returning from OAuth redirect — flash login screen showing connected state
+        updateLoginButtonStates({ hasGoogle, hasLinkedIn });
+        showScreen('login');
+        if (hasLinkedIn) {
+          setTimeout(() => _routeSession(session, { playLoading: true }), 1500);
+        }
+        // Google only: stay on login so user can sign in with LinkedIn
+        return;
+      }
+
       const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
       await _routeSession(session, { playLoading: hasLinkedIn && wasOnLogin });
     }
