@@ -162,8 +162,13 @@ class handler(StrideHandler):
             ])
             return self._json(200, {"ok": True, "draft": draft})
         except requests.HTTPError as exc:
-            code   = exc.response.status_code if exc.response is not None else 0
-            detail = exc.response.text[:200]   if exc.response is not None else str(exc)
-            return self._json(502, {"ok": False, "error": f"Agnes AI {code}: {detail}"})
-        except Exception as exc:
-            return self._json(500, {"ok": False, "error": str(exc)})
+            code = exc.response.status_code if exc.response is not None else 0
+            if code == 429:
+                msg = "The AI service is busy right now. Please wait a moment and try again."
+            elif code >= 500:
+                msg = "The AI service is temporarily unavailable. Please try again in a moment."
+            else:
+                msg = "Could not generate your draft. Please try again."
+            return self._json(502, {"ok": False, "error": msg})
+        except Exception:
+            return self._json(500, {"ok": False, "error": "Something went wrong generating your draft. Please try again."})

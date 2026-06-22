@@ -2400,6 +2400,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     await playIntroAnimation();
   }
 
+  // Detect OAuth errors returned in the URL (e.g. Google access_denied)
+  const _oauthParams = new URLSearchParams(window.location.search);
+  const _oauthError  = _oauthParams.get('error') || new URLSearchParams(window.location.hash.slice(1)).get('error');
+  if (_oauthError === 'access_denied') {
+    // Clean up the URL without reloading
+    history.replaceState(null, '', window.location.pathname);
+    // Show on the login screen after init
+    requestAnimationFrame(() => {
+      const sub = document.getElementById('login-subtext');
+      if (sub) sub.textContent = 'Google sign-in was blocked — the app hasn’t been verified by Google yet. Use LinkedIn to sign in instead.';
+    });
+  }
+
   goToStep(1);
   initOnboarding();
   initFootprintLoader();
