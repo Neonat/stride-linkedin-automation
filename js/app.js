@@ -881,7 +881,10 @@ async function publishToLinkedIn(btn) {
     btn.innerHTML = spinner + "Publishing…";
 
     const { data: { session } } = await strideSupabase.auth.getSession();
-    const linkedInToken = session?.provider_token;
+    // provider_token reflects whichever OAuth completed most recently — it becomes
+    // the Google token once the user links Google Calendar, and is null after any
+    // Supabase session refresh. Read from our cached copy instead.
+    const linkedInToken = localStorage.getItem('stride-linkedin-token') || session?.provider_token;
     if (!linkedInToken) {
       _showPublishError("Your LinkedIn session has expired.", { reconnect: true });
       return;
@@ -1917,6 +1920,19 @@ async function checkSessionAndRoute({ forceLogin = false } = {}) {
                           identities.some(i => i.provider === 'linkedin_oidc');
       const hasGoogle   = identities.some(i => i.provider === 'google');
 
+      // Persist the LinkedIn provider_token to localStorage the moment it arrives.
+      // session.provider_token belongs to whichever OAuth completed most recently,
+      // so it becomes the Google token once Google Calendar is linked — we must
+      // capture it before that happens. stride-last-provider tags which OAuth just
+      // completed so we only store when we know it's actually LinkedIn's token.
+      if (session?.provider_token) {
+        const lastProvider = localStorage.getItem('stride-last-provider');
+        if (lastProvider === 'linkedin_oidc') {
+          localStorage.setItem('stride-linkedin-token', session.provider_token);
+          localStorage.removeItem('stride-last-provider');
+        }
+      }
+
       if (!session) {
         // No session on initial load — show landing
         showScreen('landing');
@@ -2549,9 +2565,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       options: { redirectTo: window.location.origin },
     };
     localStorage.setItem('stride-oauth-pending', '1');
+    localStorage.setItem('stride-last-provider', 'linkedin_oidc');
     const { error } = await sb.auth.signInWithOAuth(opts);
     if (error) {
       console.error('LinkedIn auth error:', error.message);
+      localStorage.removeItem('stride-last-provider');
       if (errEl) errEl.hidden = false;
     }
   });
@@ -2578,6 +2596,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    localStorage.removeItem('stride-linkedin-token');
     if (note) note.hidden = false;
     // USER_UPDATED event fires from Supabase and re-routes the app to the login
     // screen (hasLinkedIn=false) where the user can reconnect LinkedIn.
@@ -2588,6 +2607,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const sb = await initSupabase();
     if (!sb) return;
     localStorage.setItem('stride-oauth-pending', '1');
+    localStorage.setItem('stride-last-provider', 'linkedin_oidc');
     await sb.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: { redirectTo: window.location.origin },
