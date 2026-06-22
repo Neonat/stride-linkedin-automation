@@ -2533,14 +2533,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // Disconnect LinkedIn — signs out entirely
-  document.getElementById('btn-disconnect-linkedin')?.addEventListener('click', async () => {
-    if (strideSupabase) await strideSupabase.auth.signOut();
-    window._currentSession = null;
-    window._currentProfile = null;
-    showScreen('login');
-  });
-
   // Disconnect Google Calendar — sets a local flag; does not sign the user out
   document.getElementById('btn-disconnect-gcal')?.addEventListener('click', () => {
     localStorage.setItem('stride-gcal-disconnected', 'true');
@@ -2663,26 +2655,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   if (isFirstVisit) {
-    showScreen('landing');
-    // Wire up auth state listener without routing (landing is shown)
-    const sb = await initSupabase();
-    if (sb) {
-      sb.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          const identities  = session?.user?.identities || [];
-          const hasGoogle   = identities.some(i => i.provider === 'google');
-          const hasLinkedIn = identities.some(i => i.provider === 'linkedin_oidc');
-          const anyConnected = hasGoogle || hasLinkedIn;
-          const wasOnLogin = document.getElementById('screen-login')?.classList.contains('active');
-          await _routeSession(session, { playLoading: anyConnected && wasOnLogin });
-        }
-        if (event === 'SIGNED_OUT') {
-          window._currentSession = null;
-          window._currentProfile = null;
-          showScreen('landing');
-        }
-      });
-    }
+    // Don't unconditionally show landing — route based on session state
+    // (same as every other visit; if no session, checkSessionAndRoute shows landing)
+    checkSessionAndRoute();
   } else {
     const fromOAuth = !!localStorage.getItem('stride-oauth-pending');
     if (fromOAuth) localStorage.removeItem('stride-oauth-pending');
