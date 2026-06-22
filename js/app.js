@@ -1921,11 +1921,18 @@ async function checkSessionAndRoute() {
 
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-      // Cache the LinkedIn provider_token immediately on OAuth return, before any
-      // subsequent Google OAuth can overwrite session.provider_token.
-      if (session?.provider_token && localStorage.getItem('stride-last-provider') === 'linkedin_oidc') {
+      // Cache provider_token keyed by which provider just completed.
+      const lastProvider = localStorage.getItem('stride-last-provider');
+      if (session?.provider_token && lastProvider === 'linkedin_oidc') {
         localStorage.setItem('stride-linkedin-token', session.provider_token);
         localStorage.removeItem('stride-last-provider');
+      } else if (session?.provider_token && lastProvider === 'google') {
+        localStorage.setItem('stride-google-token', session.provider_token);
+        localStorage.removeItem('stride-last-provider');
+      }
+      // Clear the OAuth hash fragment so tokens aren't visible in the URL bar.
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
       }
       // INITIAL_SESSION fires null during PKCE exchange — fall back to localStorage
       let resolved = session;
@@ -1937,6 +1944,7 @@ async function checkSessionAndRoute() {
     }
     if (event === 'SIGNED_OUT') {
       localStorage.removeItem('stride-linkedin-token');
+      localStorage.removeItem('stride-google-token');
       window._currentSession = null;
       window._currentProfile = null;
       showScreen('landing');
@@ -1950,8 +1958,7 @@ async function checkSessionAndRoute() {
 async function loadCalendarEvents() {
   if (!strideSupabase) return [];
   if (localStorage.getItem('stride-gcal-disconnected') === 'true') return [];
-  const { data: { session } } = await strideSupabase.auth.getSession();
-  const token = session?.provider_token;
+  const token = localStorage.getItem('stride-google-token');
   if (!token) return [];
   try {
     const now = new Date().toISOString();
@@ -2143,7 +2150,7 @@ async function _refreshPrivacyTab() {
       gcalStatus.textContent = 'Disconnected';
       if (disconnectBtn) disconnectBtn.disabled = true;
       if (reconnectMsg)  reconnectMsg.hidden = false;
-    } else if (session?.provider_token) {
+    } else if (localStorage.getItem('stride-google-token')) {
       gcalStatus.textContent = 'Connected ✓';
       gcalStatus.style.color = '#27AE60';
       if (disconnectBtn) disconnectBtn.disabled = false;
@@ -2492,12 +2499,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const sb = await initSupabase();
     console.log('supabase init', !!sb);
     if (!sb) { console.log('google: supabase init failed, returning'); if (errEl) errEl.hidden = false; return; }
+    localStorage.setItem('stride-last-provider', 'google');
     const opts = { provider: 'google', options: { scopes: 'https://www.googleapis.com/auth/calendar.readonly', redirectTo: window.location.origin } };
     const { error } = window._currentSession
       ? await sb.auth.linkIdentity(opts)
       : await sb.auth.signInWithOAuth(opts);
     if (error) {
       console.error('Google auth error:', error.message);
+      localStorage.removeItem('stride-last-provider');
       if (errEl) errEl.hidden = false;
     }
   }
