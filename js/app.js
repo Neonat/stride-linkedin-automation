@@ -2498,7 +2498,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log('supabase init', !!sb);
     if (!sb) { console.log('linkedin: supabase init failed, returning'); if (errEl) errEl.hidden = false; return; }
     localStorage.setItem('stride-last-provider', 'linkedin_oidc');
-    const opts = { provider: 'linkedin_oidc', options: { redirectTo: window.location.origin, scopes: 'w_member_social' } };
+    const opts = { provider: 'linkedin_oidc', options: { redirectTo: window.location.origin, scopes: 'openid profile email w_member_social' } };
     const { error } = window._currentSession
       ? await sb.auth.linkIdentity(opts)
       : await sb.auth.signInWithOAuth(opts);
