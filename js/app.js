@@ -921,7 +921,9 @@ async function publishToLinkedIn(btn) {
       if (pubData.error === "REVOKED_TOKEN") {
         _showPublishError("Your LinkedIn session has expired.", { reconnect: true });
       } else {
-        _showPublishError("Could not publish to LinkedIn. Please try again.");
+        const detail = pubData.error ? ` (${pubData.error})` : '';
+        _showPublishError(`Could not publish to LinkedIn.${detail}`);
+        console.error('Publish failed:', pubData);
       }
       return;
     }
@@ -2469,14 +2471,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Google sign-in (or link if already signed in with LinkedIn)
-  document.getElementById('btn-google-signin')?.addEventListener('click', async () => {
+  async function startGoogleOAuth() {
+    console.log('google click handler entered');
     const errEl = document.getElementById('login-error');
     if (errEl) errEl.hidden = true;
     const sb = await initSupabase();
+    console.log('supabase init', !!sb);
     if (!sb) { if (errEl) errEl.hidden = false; return; }
     const { data: { session } } = await sb.auth.getSession();
     const identities = session?.user?.identities || [];
-    if (identities.some(i => i.provider === 'google')) return; // Already linked
+    if (identities.some(i => i.provider === 'google')) {
+      console.log('google: already linked, skipping');
+      return;
+    }
     const { error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -2488,17 +2495,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error('Google auth error:', error.message);
       if (errEl) errEl.hidden = false;
     }
-  });
+  }
+  window.startGoogleOAuth = startGoogleOAuth;
+  document.getElementById('btn-google-signin')?.addEventListener('click', startGoogleOAuth);
 
   // LinkedIn sign-in (or link if already signed in with Google)
-  document.getElementById('btn-linkedin-signin')?.addEventListener('click', async () => {
+  async function startLinkedInOAuth() {
+    console.log('linkedin click handler entered');
     const errEl = document.getElementById('login-error');
     if (errEl) errEl.hidden = true;
     const sb = await initSupabase();
+    console.log('supabase init', !!sb);
     if (!sb) { if (errEl) errEl.hidden = false; return; }
     const { data: { session } } = await sb.auth.getSession();
     const identities = session?.user?.identities || [];
-    if (identities.some(i => i.provider === 'linkedin_oidc')) return; // Already linked
+    if (identities.some(i => i.provider === 'linkedin_oidc')) {
+      console.log('linkedin: already linked, skipping');
+      return;
+    }
     localStorage.setItem('stride-last-provider', 'linkedin_oidc');
     const { error } = await sb.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
@@ -2509,7 +2523,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       localStorage.removeItem('stride-last-provider');
       if (errEl) errEl.hidden = false;
     }
-  });
+  }
+  window.startLinkedInOAuth = startLinkedInOAuth;
+  document.getElementById('btn-linkedin-signin')?.addEventListener('click', startLinkedInOAuth);
 
   // Disconnect LinkedIn from Settings > Data & Privacy
   document.getElementById('btn-disconnect-linkedin')?.addEventListener('click', async () => {
