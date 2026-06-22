@@ -1865,9 +1865,7 @@ async function _routeSession(session) {
   const hasLinkedIn = session.user?.app_metadata?.provider === 'linkedin_oidc' ||
                       identities.some(i => i.provider === 'linkedin_oidc');
   const hasGoogle   = identities.some(i => i.provider === 'google');
-  const cachedToken = localStorage.getItem('stride-linkedin-token');
-
-  if (!hasLinkedIn && !cachedToken) {
+  if (!hasLinkedIn) {
     // Session exists but LinkedIn not connected — stay on login so user can connect it.
     updateLoginButtonStates({ hasGoogle, hasLinkedIn });
     showScreen('login');
@@ -2525,17 +2523,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const note = document.getElementById('dp-linkedin-disconnect-note');
     if (btn) { btn.disabled = true; btn.textContent = 'Disconnecting…'; }
 
-    const { error } = await sb.auth.unlinkIdentity(liIdentity);
-    if (error) {
-      console.error('Disconnect LinkedIn error:', error);
-      if (btn) { btn.disabled = false; btn.textContent = 'Disconnect LinkedIn'; }
-      return;
-    }
-
     localStorage.removeItem('stride-linkedin-token');
-    if (note) note.hidden = false;
-    // USER_UPDATED event fires from Supabase and re-routes the app to the login
-    // screen (hasLinkedIn=false) where the user can reconnect LinkedIn.
+    await sb.auth.signOut();
+    // SIGNED_OUT handler clears session and routes to landing.
   });
 
   // "Reconnect LinkedIn" button shown when the publish error is an expired token
