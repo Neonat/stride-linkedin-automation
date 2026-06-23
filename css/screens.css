@@ -310,6 +310,95 @@ body.on-landing .bg-blobs { display: none; }
 .landing-cta { padding: var(--space-8) var(--space-6) var(--space-4); text-align: center; background: #ffffff; }
 .landing-cta p { font-size: 13px; color: #6B7280; margin-top: var(--space-3); }
 
+/* ── "What Stride does" body copy ───────────────── */
+.landing-prose {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+.landing-prose p {
+  font-size: clamp(15px, 1.2vw + 12px, 17px);
+  line-height: 1.8;
+  color: #374151;
+  margin-bottom: var(--space-4);
+}
+.landing-prose p:last-child { margin-bottom: 0; }
+
+/* ── "AI + human" permission table ─────────────── */
+.ai-human-intro {
+  max-width: 600px;
+  margin: 0 auto var(--space-7);
+  text-align: center;
+  font-size: clamp(15px, 1.2vw + 12px, 17px);
+  line-height: 1.8;
+  color: #374151;
+}
+.ai-permission-eyebrow {
+  max-width: 600px;
+  margin: 0 auto var(--space-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9CA3AF;
+}
+.ai-human-permissions {
+  max-width: 600px;
+  margin: 0 auto;
+  border: 1px solid #E5E7EB;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #FAFAFA;
+}
+.ai-permission-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid #E5E7EB;
+  align-items: baseline;
+}
+.ai-permission-row:last-child { border-bottom: none; }
+.ai-permission-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+.ai-permission-desc {
+  font-size: 13px;
+  color: #6B7280;
+  line-height: 1.65;
+}
+@media (max-width: 560px) {
+  .ai-permission-row { grid-template-columns: 1fr; gap: var(--space-1); }
+}
+
+/* ── Landing footer ─────────────────────────────── */
+.landing-footer {
+  padding: var(--space-7) var(--space-6) var(--space-8);
+  text-align: center;
+  border-top: 1px solid #E5E7EB;
+  background: #F9FAFB;
+}
+.landing-footer-byline {
+  font-size: 13px;
+  color: #9CA3AF;
+  margin-bottom: var(--space-3);
+}
+.landing-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+.landing-footer-links a {
+  font-size: 13px;
+  color: #6B7280;
+  text-decoration: none;
+}
+.landing-footer-links a:hover { color: var(--color-stride-blue); }
+
 /* Mobile: stack hero vertically */
 @media (max-width: 768px) {
   .lhero { min-height: 100svh; }
