@@ -1772,53 +1772,32 @@ function initFootprintLoader() {
 async function playLoadingAndReveal(session) {
   const overlay = document.getElementById('screen-loading');
   if (!overlay) return;
+
+  // Footprint only — hide text and "all set" banner
+  const msgEl  = document.getElementById('loading-message');
+  const allSet = document.getElementById('loading-all-set');
+  if (msgEl)  msgEl.style.display  = 'none';
+  if (allSet) allSet.style.display = 'none';
+
   initFootprintLoader();
   overlay.style.display = 'flex';
   overlay.style.opacity = '1';
 
-  const msgEl   = document.getElementById('loading-message');
-  const spinner  = document.getElementById('loading-spinner');
-  const allSet   = document.getElementById('loading-all-set');
+  // Load user data in parallel with animation; show footprint for at least 700ms
+  updateUserUI(session.user);
+  const [profile] = await Promise.all([
+    loadProfile(),
+    new Promise(r => setTimeout(r, 700)),
+  ]);
 
-  const messages = [
-    'Persona initialising…',
-    'Analysing your pillars…',
-    'Calibrating your tone…',
-    'Mapping your career arc…',
-    'Syncing your calendar…',
-    'Building your momentum…',
-    'Taking the final step…',
-  ];
-
-  if (msgEl) {
-    for (const msg of messages) {
-      msgEl.style.opacity = '0';
-      await new Promise(r => setTimeout(r, 150));
-      msgEl.textContent = msg;
-      msgEl.style.opacity = '1';
-      await new Promise(r => setTimeout(r, 620));
-    }
-    msgEl.style.display = 'none';
-  }
-  if (spinner) spinner.style.display = 'none';
-  if (allSet)  allSet.style.display  = 'flex';
-  await new Promise(r => setTimeout(r, 1100));
-
-  // Fade out overlay
-  overlay.style.transition = 'opacity 0.5s ease';
+  // Fade out
+  overlay.style.transition = 'opacity 0.4s ease';
   overlay.style.opacity = '0';
-  await new Promise(r => setTimeout(r, 500));
+  await new Promise(r => setTimeout(r, 400));
   overlay.style.display = 'none';
-  // Reset for next time
-  if (msgEl)   { msgEl.style.display = ''; msgEl.textContent = ''; msgEl.style.opacity = '1'; }
-  if (spinner) spinner.style.display = '';
-  if (allSet)  allSet.style.display  = 'none';
   overlay.style.transition = '';
   overlay.style.opacity = '1';
-
-  // Load user data then show app
-  updateUserUI(session.user);
-  const profile = await loadProfile();
+  if (msgEl) msgEl.style.display = '';
   if (profile) {
     window._currentProfile = profile;
     populateDashboard(profile, session);
