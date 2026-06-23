@@ -1874,7 +1874,7 @@ function updateLoginButtonStates({ hasGoogle, hasLinkedIn }) {
 }
 
 // ── Route after auth ────────────────────────────────────────────────────────
-async function _routeSession(session) {
+async function _routeSession(session, event) {
   window._currentSession = session;
   if (!session) { showScreen('landing'); return; }
 
@@ -1887,6 +1887,13 @@ async function _routeSession(session) {
     return;
   }
 
+  // New sign-in or second-provider link: play the loading reveal animation.
+  // Returning sessions (INITIAL_SESSION) go straight to dashboard.
+  if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+    await playLoadingAndReveal(session);
+    return;
+  }
+
   try {
     updateUserUI(session.user);
     const profile = await loadProfile();
@@ -1894,6 +1901,7 @@ async function _routeSession(session) {
       window._currentProfile = profile;
       populateDashboard(profile, session);
       loadCalendarEvents().then(events => {
+        window._calendarEvents = events;
         renderCalendarEvents(events);
         const nudge = document.getElementById('gcal-nudge-card');
         if (nudge) nudge.style.display = 'none';
@@ -1907,6 +1915,16 @@ async function _routeSession(session) {
     console.error('_routeSession error:', err);
     showScreen('landing');
   }
+}
+
+function clearLocalAuthState() {
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+    .forEach(k => localStorage.removeItem(k));
+  ['stride-linkedin-token', 'stride-google-token', 'stride-last-provider', 'stride-gcal-disconnected'].forEach(k => localStorage.removeItem(k));
+  sessionStorage.clear();
+  window._currentSession = null;
+  window._currentProfile = null;
 }
 
 function getStoredSupabaseSession() {
@@ -1944,13 +1962,10 @@ async function checkSessionAndRoute() {
         resolved = getStoredSupabaseSession() || null;
         if (resolved) console.log('routing from stored session, identities:', resolved.user?.identities?.map(i => i.provider));
       }
-      await _routeSession(resolved);
+      await _routeSession(resolved, event);
     }
     if (event === 'SIGNED_OUT') {
-      localStorage.removeItem('stride-linkedin-token');
-      localStorage.removeItem('stride-google-token');
-      window._currentSession = null;
-      window._currentProfile = null;
+      clearLocalAuthState();
       showScreen('landing');
     }
   });
@@ -2594,6 +2609,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (error) {
       console.error('Google auth error:', error.message);
       localStorage.removeItem('stride-last-provider');
+      if (/session|token|expired|not found/i.test(error.message)) clearLocalAuthState();
       if (errEl) errEl.hidden = false;
     }
   }
@@ -2616,6 +2632,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (error) {
       console.error('LinkedIn auth error:', error.message);
       localStorage.removeItem('stride-last-provider');
+      if (/session|token|expired|not found/i.test(error.message)) clearLocalAuthState();
       if (errEl) errEl.hidden = false;
     }
   }
@@ -2749,10 +2766,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await strideSupabase.auth.signOut();
       }
       document.getElementById('modal-delete-account').hidden = true;
-      window._currentSession = null;
-      window._currentProfile = null;
-      localStorage.removeItem('stride-gcal-disconnected');
-      localStorage.removeItem('stride-linkedin-token');
+      clearLocalAuthState();
       showScreen('landing');
     } catch (err) {
       console.error('Delete account error:', err);
@@ -2792,9 +2806,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     playIntroAnimation();
   });
 
-  // Show landing and start auth routing before playing the intro, so all handlers
-  // are wired and Supabase initialises regardless of animation state.
-  showScreen('landing');
+  // Only show landing immediately when there is provably no session.
+  // If an OAuth callback or stored session exists, leave the screen blank
+  // (body gradient shows as a neutral pending state) and let checkSessionAndRoute decide.
+  const _mightHaveSession = !!getStoredSupabaseSession() ||
+    window.location.hash.includes('access_token') ||
+    window.location.search.includes('code=') ||
+    window.location.hash.includes('error=') ||
+    window.location.search.includes('error=');
+  if (!_mightHaveSession) showScreen('landing');
   checkSessionAndRoute();
 
   // Play intro last (first visit only). Full-screen overlay covers landing;
