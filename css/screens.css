@@ -162,7 +162,7 @@ body.on-landing .bg-blobs { display: none; }
 .lhero-panel {
   position: absolute;
   left: 60vw; right: 6vw;
-  top: 24vh; bottom: 4vh;
+  top: 18vh; bottom: 8vh;
   background: #1746C8;
   border-radius: 30px;
   z-index: 5;
@@ -172,7 +172,7 @@ body.on-landing .bg-blobs { display: none; }
 .lhero-figure {
   position: absolute;
   left: 77vw; transform: translateX(-50%);
-  bottom: 9vh;
+  bottom: 14vh;
   height: 60vh; width: auto;
   z-index: 6;
   pointer-events: none;
