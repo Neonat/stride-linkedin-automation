@@ -134,6 +134,9 @@ function showScreen(id) {
   if (id === "posts") {
     populatePostsScreen();
   }
+  if (id === "collab") {
+    renderCollabCalendar(window._calendarEvents || []);
+  }
 
   // Handle global navbar visibility and active tabs
   const globalNav = document.getElementById("global-nav");
@@ -1820,6 +1823,7 @@ async function playLoadingAndReveal(session) {
     window._currentProfile = profile;
     populateDashboard(profile, session);
     loadCalendarEvents().then(events => {
+      window._calendarEvents = events;
       renderCalendarEvents(events);
       const nudge = document.getElementById('gcal-nudge-card');
       if (nudge) nudge.style.display = 'none';
@@ -1975,9 +1979,45 @@ async function loadCalendarEvents() {
   }
 }
 
+function buildWeekStrip(containerId, events, dotColor) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+
+  const eventDates = new Set((events || []).map(ev => {
+    const d = ev.start?.dateTime || ev.start?.date;
+    return d ? d.slice(0, 10) : null;
+  }).filter(Boolean));
+
+  const labels = ['M','T','W','T','F','S','S'];
+  container.innerHTML = labels.map((label, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const isToday = d.toDateString() === today.toDateString();
+    const isWeekend = i >= 5;
+    const hasEvent = eventDates.has(d.toISOString().slice(0, 10));
+    const numBg = isToday ? '#2E7FB8' : isWeekend ? '#FAFBFC' : '#F7F9FB';
+    const numColor = isToday ? '#fff' : isWeekend ? '#8C8C8C' : '#3D3D3D';
+    const numWeight = isToday ? '700' : '600';
+    const labelColor = isWeekend ? '#C4C4C4' : '#8C8C8C';
+    const dot = (hasEvent && !isToday)
+      ? `<span style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:${dotColor || '#2E7FB8'};"></span>`
+      : '';
+    return `<div style="flex:1;text-align:center;">
+      <div style="font-size:10px;font-weight:600;color:${labelColor};margin-bottom:5px;">${label}</div>
+      <div style="height:30px;border-radius:8px;background:${numBg};color:${numColor};font-size:13px;font-weight:${numWeight};display:flex;align-items:center;justify-content:center;position:relative;">${d.getDate()}${dot}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderCalendarEvents(events) {
   const container = document.getElementById('upcoming-events-list');
   if (!container) return;
+
+  buildWeekStrip('cal-week-strip', events, '#2E7FB8');
 
   if (localStorage.getItem('stride-gcal-disconnected') === 'true') {
     container.innerHTML = `<p class="text-caption text-muted" style="text-align:center;padding:var(--space-3) 0;">Google Calendar disconnected. <a href="#" id="dashboard-gcal-reconnect" style="color:var(--color-stride-blue);text-decoration:none;font-weight:600;">Reconnect</a></p>`;
@@ -1988,30 +2028,77 @@ function renderCalendarEvents(events) {
     return;
   }
   if (!events.length) {
-    container.innerHTML = '<p class="text-caption text-muted">No upcoming events found.</p>';
+    container.innerHTML = '<p class="text-caption text-muted" style="padding:8px 0;">No upcoming events found.</p>';
     return;
   }
-  container.innerHTML = events.slice(0, 3).map(event => {
+  const colors = ['#2E7FB8', '#8E44AD', '#27AE60', '#E67E22', '#5A5A5A'];
+  container.innerHTML = events.slice(0, 4).map((event, i) => {
     const start = event.start?.dateTime || event.start?.date;
-    const date = start ? new Date(start).toLocaleDateString('en-SG', {
+    const dateStr = start ? new Date(start).toLocaleDateString('en-SG', {
       weekday: 'short', month: 'short', day: 'numeric',
       hour: event.start?.dateTime ? 'numeric' : undefined,
       minute: event.start?.dateTime ? '2-digit' : undefined,
     }) : '';
+    const color = colors[i % colors.length];
     const safeSummary = (event.summary || '').replace(/'/g, "\\'");
-    return `
-      <div style="display:flex;gap:var(--space-3);align-items:flex-start;padding:var(--space-3) 0;border-bottom:0.5px solid var(--border-default);">
-        <div style="flex-shrink:0;width:36px;height:36px;border-radius:var(--border-radius-sm);background:var(--color-background-info);display:flex;align-items:center;justify-content:center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-info)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <div style="flex:1;min-width:0;">
-          <p style="font-size:14px;font-weight:500;margin:0;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${event.summary || 'Untitled event'}</p>
-          <p class="text-caption text-muted" style="margin:2px 0 0;">${date}</p>
-        </div>
-        <button class="btn btn-ghost btn-inline" style="font-size:12px;flex-shrink:0;"
-          onclick="captureEventAsMoment('${safeSummary}','${start || ''}')">+ Capture</button>
-      </div>`;
+    const isLast = i === Math.min(events.length, 4) - 1;
+    return `<div style="display:flex;gap:11px;padding:9px 0;${isLast ? '' : 'border-bottom:1px solid var(--border-default);'}align-items:flex-start;">
+      <div style="width:3px;border-radius:2px;background:${color};flex:none;align-self:stretch;min-height:32px;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${event.summary || 'Untitled event'}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);">${dateStr}</div>
+      </div>
+      <button class="btn btn-ghost btn-inline" style="font-size:11px;flex-shrink:0;padding:3px 8px;"
+        onclick="captureEventAsMoment('${safeSummary}','${start || ''}')">+ Capture</button>
+    </div>`;
   }).join('');
+}
+
+function renderCollabCalendar(events) {
+  buildWeekStrip('collab-week-strip', events, '#8E44AD');
+
+  const list = document.getElementById('collab-events-list');
+  if (!list) return;
+
+  // Show up to 3 real events, then fill with partner placeholder if fewer than 2
+  const userEvents = (events || []).slice(0, 2);
+  const partnerDemos = [
+    { summary: '🎤 Demo Night', meta: 'Wed · Priya, Marcus, Dana', color: '#8E44AD' },
+    { summary: '📸 Hackathon recap', meta: 'Thu · draft post', color: '#27AE60' },
+  ];
+
+  const items = userEvents.map((ev, i) => {
+    const start = ev.start?.dateTime || ev.start?.date;
+    const dateStr = start ? new Date(start).toLocaleDateString('en-SG', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: ev.start?.dateTime ? 'numeric' : undefined,
+      minute: ev.start?.dateTime ? '2-digit' : undefined,
+    }) : '';
+    return { summary: ev.summary || 'Untitled event', meta: dateStr + ' · You', color: '#2E7FB8' };
+  });
+
+  // Pad with partner demos to always show 2–3 entries
+  const merged = [...items, ...partnerDemos].slice(0, 3);
+
+  list.innerHTML = merged.map((item, i) => {
+    const isLast = i === merged.length - 1;
+    return `<div style="display:flex;gap:11px;padding:9px 0;${isLast ? '' : 'border-bottom:1px solid var(--border-default);'}">
+      <div style="width:3px;border-radius:2px;background:${item.color};flex:none;align-self:stretch;min-height:28px;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${item.summary}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);">${item.meta}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Set a plausible "everyone's free" slot
+  const freeSlot = document.getElementById('collab-free-slot');
+  if (freeSlot) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const day = tomorrow.toLocaleDateString('en-SG', { weekday: 'short', month: 'short', day: 'numeric' });
+    freeSlot.textContent = `${day} · 4:00–5:00 PM`;
+  }
 }
 
 function captureEventAsMoment(title, date) {
