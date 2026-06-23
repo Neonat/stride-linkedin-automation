@@ -1769,35 +1769,60 @@ function initFootprintLoader() {
   grid.appendChild(frag);
 }
 
+// Full completion loader: footprint + rotating messages + "You're all set".
+// Used when both providers have just been connected (SIGNED_IN / USER_UPDATED).
 async function playLoadingAndReveal(session) {
-  const overlay = document.getElementById('screen-loading');
+  const overlay  = document.getElementById('screen-loading');
   if (!overlay) return;
-
-  // Footprint only — hide text and "all set" banner
-  const msgEl  = document.getElementById('loading-message');
-  const allSet = document.getElementById('loading-all-set');
-  if (msgEl)  msgEl.style.display  = 'none';
-  if (allSet) allSet.style.display = 'none';
+  const msgEl   = document.getElementById('loading-message');
+  const spinner  = document.getElementById('loading-spinner');
+  const allSet   = document.getElementById('loading-all-set');
 
   initFootprintLoader();
   overlay.style.display = 'flex';
   overlay.style.opacity = '1';
 
-  // Load user data in parallel with animation; show footprint for at least 700ms
+  // Kick off data loading in parallel while the message sequence plays
   updateUserUI(session.user);
-  const [profile] = await Promise.all([
-    loadProfile(),
-    new Promise(r => setTimeout(r, 700)),
-  ]);
+  const profilePromise = loadProfile();
 
-  // Fade out
-  overlay.style.transition = 'opacity 0.4s ease';
+  const messages = [
+    'Persona initialising…',
+    'Analysing your pillars…',
+    'Calibrating your tone…',
+    'Mapping your career arc…',
+    'Syncing your calendar…',
+    'Building your momentum…',
+    'Taking the final step…',
+  ];
+
+  if (msgEl) {
+    for (const msg of messages) {
+      msgEl.style.opacity = '0';
+      await new Promise(r => setTimeout(r, 150));
+      msgEl.textContent = msg;
+      msgEl.style.opacity = '1';
+      await new Promise(r => setTimeout(r, 620));
+    }
+    msgEl.style.display = 'none';
+  }
+  if (spinner) spinner.style.display = 'none';
+  if (allSet)  allSet.style.display  = 'flex';
+  await new Promise(r => setTimeout(r, 1100));
+
+  overlay.style.transition = 'opacity 0.5s ease';
   overlay.style.opacity = '0';
-  await new Promise(r => setTimeout(r, 400));
+  await new Promise(r => setTimeout(r, 500));
   overlay.style.display = 'none';
+  // Reset for next time
+  if (msgEl)   { msgEl.style.display = ''; msgEl.textContent = ''; msgEl.style.opacity = '1'; }
+  if (spinner) spinner.style.display = '';
+  if (allSet)  allSet.style.display  = 'none';
   overlay.style.transition = '';
   overlay.style.opacity = '1';
-  if (msgEl) msgEl.style.display = '';
+
+  // Profile should already be resolved (messages took ~5s)
+  const profile = await profilePromise;
   if (profile) {
     window._currentProfile = profile;
     populateDashboard(profile, session);
@@ -1812,6 +1837,33 @@ async function playLoadingAndReveal(session) {
   } else {
     showScreen('onboarding');
   }
+}
+
+// Quiet loader: footprint animation only, no text. For normal screen transitions.
+function showFootprintLoading() {
+  const overlay = document.getElementById('screen-loading');
+  if (!overlay) return;
+  const msgEl  = document.getElementById('loading-message');
+  const allSet = document.getElementById('loading-all-set');
+  if (msgEl)  msgEl.style.display  = 'none';
+  if (allSet) allSet.style.display = 'none';
+  initFootprintLoader();
+  overlay.style.transition = '';
+  overlay.style.opacity    = '1';
+  overlay.style.display    = 'flex';
+}
+
+async function hideFootprintLoading() {
+  const overlay = document.getElementById('screen-loading');
+  if (!overlay) return;
+  overlay.style.transition = 'opacity 0.4s ease';
+  overlay.style.opacity    = '0';
+  await new Promise(r => setTimeout(r, 400));
+  overlay.style.display    = 'none';
+  overlay.style.transition = '';
+  overlay.style.opacity    = '1';
+  const msgEl = document.getElementById('loading-message');
+  if (msgEl) msgEl.style.display = '';
 }
 
 // ── Update login button connected states ───────────────────────────────────
@@ -1874,8 +1926,10 @@ async function _routeSession(session, event) {
   }
 
   try {
+    showFootprintLoading();
     updateUserUI(session.user);
     const profile = await loadProfile();
+    await hideFootprintLoading();
     if (profile) {
       window._currentProfile = profile;
       populateDashboard(profile, session);
@@ -1892,6 +1946,7 @@ async function _routeSession(session, event) {
     }
   } catch (err) {
     console.error('_routeSession error:', err);
+    await hideFootprintLoading();
     showScreen('landing');
   }
 }
