@@ -112,7 +112,7 @@ body.on-landing .bg-blobs { display: none; }
 
 .lhero-copy {
   position: absolute;
-  left: 6vw; top: 50%; transform: translateY(-50%);
+  left: 6vw; top: 43%; transform: translateY(-50%);
   width: 46vw; max-width: 480px;
   z-index: 10;
   padding-top: 88px; /* clear fixed nav */
@@ -181,7 +181,7 @@ body.on-landing .bg-blobs { display: none; }
 /* ── Built With ── */
 .lbuilt {
   border-top: 1px solid #e2e5ea;
-  padding: 72px 6vw 90px;
+  padding: 120px 6vw 90px;
   text-align: center;
   background: #f7f6f3;
 }
@@ -378,7 +378,7 @@ body.on-landing .bg-blobs { display: none; }
 .landing-footer {
   width: 100%;
   box-sizing: border-box;
-  padding: var(--space-7) var(--space-6) var(--space-8);
+  padding: 56px var(--space-6) 80px;
   text-align: center;
   border-top: 1px solid #E5E7EB;
   background: #F9FAFB;
