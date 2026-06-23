@@ -1649,8 +1649,8 @@ async function saveOnboardingProfile(answers) {
   if (error) console.error("Failed to save profile:", error.message);
 }
 
-async function loadProfile() {
-  const { data: { session } } = await strideSupabase.auth.getSession();
+async function loadProfile(sessionOverride = null) {
+  const session = sessionOverride || (await strideSupabase.auth.getSession()).data.session;
   if (!session) return null;
 
   const { data, error } = await strideSupabase
@@ -1667,11 +1667,18 @@ async function loadProfile() {
       full_name: meta.full_name || meta.name || '',
       avatar_url: meta.avatar_url || meta.picture || '',
     });
-    return await loadProfile();
+    return await loadProfile(session);
   }
 
   if (error) { console.error('loadProfile error:', error.message); return null; }
   return data;
+}
+
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms)),
+  ]);
 }
 
 function getSelectedChips(stepId) {
@@ -1777,52 +1784,56 @@ async function playLoadingAndReveal(session) {
   const msgEl   = document.getElementById('loading-message');
   const spinner  = document.getElementById('loading-spinner');
   const allSet   = document.getElementById('loading-all-set');
+  let profile = null;
 
-  initFootprintLoader();
-  overlay.style.display = 'flex';
-  overlay.style.opacity = '1';
+  try {
+    initFootprintLoader();
+    overlay.style.transition = '';
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
+    if (msgEl) { msgEl.style.display = ''; msgEl.textContent = ''; msgEl.style.opacity = '1'; }
+    if (spinner) spinner.style.display = '';
+    if (allSet)  allSet.style.display  = 'none';
 
-  // Kick off data loading in parallel while the message sequence plays
-  updateUserUI(session.user);
-  const profilePromise = loadProfile();
+    // Kick off data loading in parallel while the message sequence plays.
+    updateUserUI(session.user);
+    const profilePromise = withTimeout(loadProfile(session), 10000, 'Profile load');
 
-  const messages = [
-    'Persona initialising…',
-    'Analysing your pillars…',
-    'Calibrating your tone…',
-    'Mapping your career arc…',
-    'Syncing your calendar…',
-    'Building your momentum…',
-    'Taking the final step…',
-  ];
+    const messages = [
+      'Persona initialising…',
+      'Analysing your pillars…',
+      'Calibrating your tone…',
+      'Mapping your career arc…',
+      'Syncing your calendar…',
+      'Building your momentum…',
+      'Taking the final step…',
+    ];
 
-  if (msgEl) {
-    for (const msg of messages) {
-      msgEl.style.opacity = '0';
-      await new Promise(r => setTimeout(r, 150));
-      msgEl.textContent = msg;
-      msgEl.style.opacity = '1';
-      await new Promise(r => setTimeout(r, 620));
+    if (msgEl) {
+      for (const msg of messages) {
+        msgEl.style.opacity = '0';
+        await new Promise(r => setTimeout(r, 150));
+        msgEl.textContent = msg;
+        msgEl.style.opacity = '1';
+        await new Promise(r => setTimeout(r, 620));
+      }
+      msgEl.style.display = 'none';
     }
-    msgEl.style.display = 'none';
+    profile = await profilePromise;
+  } catch (err) {
+    console.error('playLoadingAndReveal error:', err);
+  } finally {
+    overlay.style.transition = 'opacity 0.5s ease';
+    overlay.style.opacity = '0';
+    await new Promise(r => setTimeout(r, 500));
+    overlay.style.display = 'none';
+    if (msgEl)   { msgEl.style.display = ''; msgEl.textContent = ''; msgEl.style.opacity = '1'; }
+    if (spinner) spinner.style.display = '';
+    if (allSet)  allSet.style.display  = 'none';
+    overlay.style.transition = '';
+    overlay.style.opacity = '1';
   }
-  if (spinner) spinner.style.display = 'none';
-  if (allSet)  allSet.style.display  = 'flex';
-  await new Promise(r => setTimeout(r, 1100));
 
-  overlay.style.transition = 'opacity 0.5s ease';
-  overlay.style.opacity = '0';
-  await new Promise(r => setTimeout(r, 500));
-  overlay.style.display = 'none';
-  // Reset for next time
-  if (msgEl)   { msgEl.style.display = ''; msgEl.textContent = ''; msgEl.style.opacity = '1'; }
-  if (spinner) spinner.style.display = '';
-  if (allSet)  allSet.style.display  = 'none';
-  overlay.style.transition = '';
-  overlay.style.opacity = '1';
-
-  // Profile should already be resolved (messages took ~5s)
-  const profile = await profilePromise;
   if (profile) {
     window._currentProfile = profile;
     populateDashboard(profile, session);
@@ -1906,6 +1917,7 @@ function updateLoginButtonStates({ hasGoogle, hasLinkedIn }) {
 
 // ── Route after auth ────────────────────────────────────────────────────────
 async function _routeSession(session, event) {
+  window._authRouteResolved = true;
   window._currentSession = session;
   if (!session) { showScreen('landing'); return; }
 
@@ -1928,7 +1940,7 @@ async function _routeSession(session, event) {
   try {
     showFootprintLoading();
     updateUserUI(session.user);
-    const profile = await loadProfile();
+    const profile = await withTimeout(loadProfile(session), 10000, 'Profile load');
     await hideFootprintLoading();
     if (profile) {
       window._currentProfile = profile;
@@ -1974,6 +1986,7 @@ function getStoredSupabaseSession() {
 async function checkSessionAndRoute() {
   const sb = await initSupabase();
   if (!sb) { showScreen('landing'); return; }
+  window._authRouteResolved = false;
 
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
@@ -2003,6 +2016,20 @@ async function checkSessionAndRoute() {
       showScreen('landing');
     }
   });
+
+  const stored = getStoredSupabaseSession();
+  if (stored) {
+    setTimeout(() => {
+      if (!window._authRouteResolved) {
+        console.log('auth event fallback: routing from stored session');
+        _routeSession(stored, 'INITIAL_SESSION');
+      }
+    }, 1200);
+  } else {
+    setTimeout(() => {
+      if (!window._authRouteResolved) showScreen('landing');
+    }, 5000);
+  }
 }
 
 /* ─────────────────────────────────────────
