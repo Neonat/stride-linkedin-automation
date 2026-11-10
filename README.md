@@ -2,7 +2,7 @@
 
 Stride is a hackathon prototype for students and early-career professionals who want to turn real career moments into LinkedIn posts. Set a profile and tone, capture an experience, generate a draft, review it, and explicitly publish using a connected LinkedIn account.
 
-Built for the **LinkedIn TrailBlazer Hackathon**, in the LinkedIn Career Trailblazer Camp context, using **ChatChat by ChatAndBuild** as part of the build workflow. ChatAndBuild describes the [career-agent session and hackathon](https://www.linkedin.com/pulse/from-job-search-proof-work-creating-career-agents-linkedin-trsce). The application's landing page credits Nat Sim and labels Stride a demo/beta.
+Built for the **LinkedIn TrailBlazer Hackathon**, in the LinkedIn Career Trailblazer Camp context, using **ChatChat by ChatAndBuild** as part of the build workflow. ChatAndBuild describes the [career-agent session and hackathon](https://www.linkedin.com/pulse/from-job-search-proof-work-creating-career-agents-linkedin-trsce). The application's landing page labels Stride a demo/beta.
 
 ## Current workflow
 
