@@ -1,7 +1,6 @@
 """
 Stride — /api/publish
 Posts to LinkedIn using the LinkedIn REST API v2.
-Only call this AFTER api/safety_check returns { safe: true }.
 
 The caller MUST supply the user's LinkedIn access token in the request body
 as `linkedInToken`. The backend derives the person URN from /v2/userinfo so
@@ -29,8 +28,8 @@ _LI_USERINFO = "https://api.linkedin.com/v2/userinfo"
 class handler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
-        self._send_cors()
         self.send_response(204)
+        self._send_cors()
         self.end_headers()
 
     def do_POST(self):

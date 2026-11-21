@@ -176,8 +176,8 @@ def _check_google_calendar(request_headers: dict) -> dict:
 class handler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
-        self._send_cors()
         self.send_response(204)
+        self._send_cors()
         self.end_headers()
 
     def do_GET(self):
